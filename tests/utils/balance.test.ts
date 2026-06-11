@@ -1,0 +1,59 @@
+import { describe, it, expect } from 'vitest'
+import { calculateNetBalances, minimizeTransfers } from '@/lib/utils/balance'
+
+describe('calculateNetBalances', () => {
+  it('alice paid for both: alice net positive, bob net negative', () => {
+    const expenses = [{ id: 'e1', amount: 1000, currency: 'JPY' as const, paid_by: 'alice' }]
+    const splits = [
+      { expense_id: 'e1', user_id: 'alice', amount: 500 },
+      { expense_id: 'e1', user_id: 'bob', amount: 500 },
+    ]
+    const balances = calculateNetBalances(expenses, splits, 0.218)
+    const alice = balances.find(b => b.userId === 'alice')!
+    const bob = balances.find(b => b.userId === 'bob')!
+    // alice paid 1000 JPY (218 TWD), owes 500 JPY (109 TWD) → net +109 TWD
+    expect(alice.netTWD).toBeCloseTo(109, 2)
+    expect(bob.netTWD).toBeCloseTo(-109, 2)
+  })
+
+  it('net sum is zero', () => {
+    const expenses = [{ id: 'e1', amount: 300, currency: 'TWD' as const, paid_by: 'alice' }]
+    const splits = [
+      { expense_id: 'e1', user_id: 'alice', amount: 100 },
+      { expense_id: 'e1', user_id: 'bob', amount: 100 },
+      { expense_id: 'e1', user_id: 'carol', amount: 100 },
+    ]
+    const balances = calculateNetBalances(expenses, splits, 0.218)
+    const total = balances.reduce((sum, b) => sum + b.netTWD, 0)
+    expect(total).toBeCloseTo(0, 5)
+  })
+})
+
+describe('minimizeTransfers', () => {
+  it('simple: bob owes alice 100', () => {
+    const balances = [
+      { userId: 'alice', netTWD: 100 },
+      { userId: 'bob', netTWD: -100 },
+    ]
+    const transfers = minimizeTransfers(balances)
+    expect(transfers).toHaveLength(1)
+    expect(transfers[0]).toEqual({ from: 'bob', to: 'alice', amountTWD: 100 })
+  })
+
+  it('3 people: 2 transfers', () => {
+    const balances = [
+      { userId: 'alice', netTWD: 200 },
+      { userId: 'bob', netTWD: -100 },
+      { userId: 'carol', netTWD: -100 },
+    ]
+    expect(minimizeTransfers(balances)).toHaveLength(2)
+  })
+
+  it('all zero: no transfers', () => {
+    const balances = [
+      { userId: 'alice', netTWD: 0 },
+      { userId: 'bob', netTWD: 0 },
+    ]
+    expect(minimizeTransfers(balances)).toHaveLength(0)
+  })
+})
