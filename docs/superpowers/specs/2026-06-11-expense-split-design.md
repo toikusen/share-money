@@ -16,7 +16,7 @@
 | 層級 | 技術 |
 |------|------|
 | 前端框架 | Next.js App Router (TypeScript) |
-| 部署 | Cloudflare Pages (`@cloudflare/next-on-pages`) |
+| 部署 | Cloudflare Workers (`@opennextjs/cloudflare`) |
 | 資料庫 | Supabase PostgreSQL |
 | 認證 | Supabase Auth + Google OAuth |
 | Session 管理 | `@supabase/ssr`（cookie-based） |
@@ -93,19 +93,23 @@ expenses (
   id              uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
   trip_id         uuid  NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
   title           text  NOT NULL,
-  amount          numeric(12,2) NOT NULL,
+  amount          numeric(12,2) NOT NULL CHECK (amount > 0),
   currency        text  NOT NULL CHECK (currency IN ('JPY', 'TWD')),
+  -- JPY 為整數幣別：CHECK (currency = 'TWD' OR amount = floor(amount))
   paid_by         uuid  NOT NULL REFERENCES profiles(id),
   created_by      uuid  NOT NULL REFERENCES profiles(id),
   created_at      timestamptz DEFAULT now()
+  -- paid_by 和所有 expense_splits.user_id 必須是 trip_members；
+  -- 由 create_expense_with_splits RPC 在 DB 內驗證
 )
 
 -- 每筆費用的分擔明細
 expense_splits (
   expense_id      uuid  REFERENCES expenses(id) ON DELETE CASCADE,
   user_id         uuid  REFERENCES profiles(id),
-  amount          numeric(12,2) NOT NULL,  -- 與 expense 同幣別
+  amount          numeric(12,2) NOT NULL CHECK (amount >= 0),  -- 與 expense 同幣別
   PRIMARY KEY (expense_id, user_id)
+  -- sum(amount) == expense.amount 由 create_expense_with_splits RPC 強制驗證
 )
 ```
 
@@ -113,15 +117,25 @@ expense_splits (
 
 ## Row Level Security (RLS)
 
-| 表 | 讀取 | 寫入 | 刪除 |
-|----|------|------|------|
-| `profiles` | 所有登入使用者 | 本人 | — |
-| `trips` | trip_members 成員 | 登入使用者（建立） | 建立者 |
-| `trip_members` | 同行程成員 | service role（join flow）| — |
-| `expenses` | 同行程成員 | 同行程成員 | 建立者 |
-| `expense_splits` | 同行程成員 | 隨 expense 一起寫入 | 隨 expense 刪除 |
+| 表 | SELECT | INSERT | UPDATE | DELETE |
+|----|--------|--------|--------|--------|
+| `profiles` | 任何登入使用者 | auth callback（service role） | 本人 | — |
+| `trips` | trip_members 成員 | 任何登入使用者 | trip_members 成員（含改匯率） | `created_by` |
+| `trip_members` | 同行程成員 | **service role only** | — | — |
+| `expenses` | 同行程成員 | **service role only**（RPC） | — | `created_by` |
+| `expense_splits` | 同行程成員 | **service role only**（RPC） | — | 隨 expense 刪除 |
 
-**Join flow 說明：** `/join/[token]` 頁面的 Server Action 使用 Supabase service role client 查詢 invite_token 並插入 `trip_members`，繞過 RLS（使用者尚未是成員，無法通過 RLS）。
+**Service role RPC 說明：**
+
+- `create_trip(name, exchange_rate)` — 在 DB 內一次 INSERT trips + INSERT trip_members（建立者），保證原子性
+- `join_trip(invite_token)` — 驗證 token → INSERT trip_members（新成員）
+- `create_expense_with_splits(trip_id, title, amount, currency, paid_by, splits[])` — 在 DB 內：
+  1. 驗證 paid_by 和所有 splits.user_id 都在 trip_members 中
+  2. 驗證 sum(splits.amount) == amount（exact match）
+  3. 驗證 JPY 費用的 amount 為整數
+  4. INSERT expenses + INSERT expense_splits（單一 transaction）
+
+`trips` INSERT 保持開放給登入使用者，但實際建立流程必須透過 `create_trip` RPC（才能同時加入 trip_members）。直接 INSERT trips 不會自動加入成員，UI 層不提供此操作。
 
 ---
 
@@ -139,8 +153,8 @@ callback: 交換 code → 寫 cookie → upsert profiles → redirect /trips
 /trips/new → 填名稱
 Server Action: 呼叫 ExchangeRate API 取得 JPY/TWD 即時匯率
              → 若 API 失敗，回傳錯誤讓使用者手動輸入
-             → INSERT trips
-             → INSERT trip_members（建立者）
+             → 呼叫 create_trip(name, exchange_rate) RPC（service role）
+               → DB 內原子: INSERT trips + INSERT trip_members（建立者）
              → redirect /trips/[id]
 ```
 
@@ -157,9 +171,10 @@ Server Action（service role）: 查詢 trips WHERE invite_token = token
 ```
 行程頁點「新增費用」→ Modal 開啟
 填寫：標題、金額、幣別、付款人、分擔成員、分擔金額（均攤或自訂）
-Client 驗證：sum(splits) == expense.amount
-Server Action: INSERT expenses → INSERT expense_splits（transaction）
-             → 若驗證失敗回傳錯誤
+Client 驗證：sum(splits) == expense.amount（快速 UX 回饋）
+Server Action: 呼叫 create_expense_with_splits RPC（service role）
+             → DB 內再次驗證：成員身份、金額總和、JPY 整數
+             → 若驗證失敗，RPC 拋出例外，Server Action 回傳錯誤訊息
 ```
 
 ### 分帳計算（server-side）
@@ -167,12 +182,26 @@ Server Action: INSERT expenses → INSERT expense_splits（transaction）
 讀取行程所有 expense_splits
 依 trip.exchange_rate 統一換算為 TWD
 計算每人 net = paid_total - owed_total
-Debt minimization：
-  credits = net > 0 的人（被欠款）
-  debts   = net < 0 的人（欠款）
-  greedy matching → 最少筆數的轉帳清單
+Debt minimization（簡化轉帳清單）：
+  credits = net > 0 的人（被欠款），依金額大到小排列
+  debts   = net < 0 的人（欠款），依絕對值大到小排列
+  iterative matching：最大債務人付給最大債權人，重複直到清零
+  -- 旅遊群組人數小（≤10），此演算法接近最優解
 結果以 TWD + 原幣並列顯示
 ```
+
+---
+
+## 金額與 Rounding 規則
+
+| 情境 | 規則 |
+|------|------|
+| JPY 費用金額 | 整數（DB CHECK: `amount = floor(amount)`） |
+| TWD 費用金額 | 最多 2 位小數 |
+| 均攤計算餘數 | 無法整除時，餘數加到第一位成員的分擔額 |
+| `sum(splits) == amount` | DB 內 exact match，不允許誤差 |
+| 匯率換算（JPY→TWD）| `round(amount * exchange_rate, 2)` |
+| 分帳結算顯示 | TWD 以 2 位小數顯示；JPY 以整數顯示 |
 
 ---
 
@@ -190,9 +219,9 @@ Debt minimization：
 | 情境 | 處理方式 |
 |------|----------|
 | 分帳金額總和 ≠ 費用金額 | Server Action 回傳錯誤，前端 inline 提示 |
-| invite_token 無效 | 顯示「連結無效或已過期」頁面 |
+| invite_token 無效 | 顯示「連結無效」頁面（token 無 expiry，不說「已過期」） |
 | ExchangeRate API 失敗 | Fallback 手動輸入，不阻擋建立行程 |
-| 未登入訪問保護路由 | Middleware redirect 到 /login |
+| 未登入訪問保護路由 | Middleware redirect 到 `/login?next=<path>`，`next` 僅允許 `/` 開頭的相對路徑（防 open redirect） |
 | 非行程成員訪問行程 | RLS 拒絕，Server Component 顯示 404 |
 
 ---
@@ -208,6 +237,12 @@ Debt minimization：
 ## 目錄結構（預計）
 
 ```
+supabase/
+├── migrations/
+│   └── 0001_init.sql           # 所有 tables + RLS policies
+└── functions/
+    └── expense_helpers.sql     # create_trip, join_trip, create_expense_with_splits RPC
+
 src/
 ├── app/
 │   ├── (auth)/
