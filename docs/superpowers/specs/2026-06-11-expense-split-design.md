@@ -32,7 +32,7 @@
 - 建立行程（名稱、自動抓取即時匯率、可手動覆蓋）
 - 行程成員管理（透過分享連結加入）
 - 新增費用（名稱、金額、幣別、付款人、分擔成員與金額）
-- 分帳計算（最少轉帳筆數）
+- 分帳計算（簡化轉帳清單）
 - 查看結算清單（誰欠誰多少，含 JPY/TWD 雙幣顯示）
 
 ### 排除於 MVP 之外
@@ -75,8 +75,8 @@ trips (
   id              uuid  PRIMARY KEY DEFAULT gen_random_uuid(),
   name            text  NOT NULL,
   created_by      uuid  NOT NULL REFERENCES profiles(id),
-  exchange_rate   numeric(10,4) NOT NULL,  -- 1 JPY = ? TWD
-  invite_token    uuid  UNIQUE DEFAULT gen_random_uuid(),
+  exchange_rate   numeric(10,4) NOT NULL CHECK (exchange_rate > 0),  -- 1 JPY = ? TWD
+  invite_token    uuid  NOT NULL UNIQUE DEFAULT gen_random_uuid(),
   created_at      timestamptz DEFAULT now()
 )
 
@@ -110,6 +110,7 @@ expense_splits (
   amount          numeric(12,2) NOT NULL CHECK (amount >= 0),  -- 與 expense 同幣別
   PRIMARY KEY (expense_id, user_id)
   -- sum(amount) == expense.amount 由 create_expense_with_splits RPC 強制驗證
+  -- JPY expense 的每筆 split amount 也須為整數，由 RPC 驗證
 )
 ```
 
@@ -119,23 +120,60 @@ expense_splits (
 
 | 表 | SELECT | INSERT | UPDATE | DELETE |
 |----|--------|--------|--------|--------|
-| `profiles` | 任何登入使用者 | auth callback（service role） | 本人 | — |
-| `trips` | trip_members 成員 | 任何登入使用者 | trip_members 成員（含改匯率） | `created_by` |
-| `trip_members` | 同行程成員 | **service role only** | — | — |
-| `expenses` | 同行程成員 | **service role only**（RPC） | — | `created_by` |
-| `expense_splits` | 同行程成員 | **service role only**（RPC） | — | 隨 expense 刪除 |
+| `profiles` | 任何登入使用者 | auth callback（SECURITY DEFINER） | 本人 | — |
+| `trips` | trip_members 成員 | ❌ no policy | ❌ no policy | `created_by` |
+| `trip_members` | 同行程成員 | ❌ no policy | — | — |
+| `expenses` | 同行程成員 | ❌ no policy | — | `created_by` |
+| `expense_splits` | 同行程成員 | ❌ no policy | — | CASCADE（隨 expense） |
 
-**Service role RPC 說明：**
+`❌ no policy` = RLS 預設 deny，只有 SECURITY DEFINER function 能寫入。
 
-- `create_trip(name, exchange_rate)` — 在 DB 內一次 INSERT trips + INSERT trip_members（建立者），保證原子性
-- `join_trip(invite_token)` — 驗證 token → INSERT trip_members（新成員）
-- `create_expense_with_splits(trip_id, title, amount, currency, paid_by, splits[])` — 在 DB 內：
-  1. 驗證 paid_by 和所有 splits.user_id 都在 trip_members 中
-  2. 驗證 sum(splits.amount) == amount（exact match）
-  3. 驗證 JPY 費用的 amount 為整數
-  4. INSERT expenses + INSERT expense_splits（單一 transaction）
+---
 
-`trips` INSERT 保持開放給登入使用者，但實際建立流程必須透過 `create_trip` RPC（才能同時加入 trip_members）。直接 INSERT trips 不會自動加入成員，UI 層不提供此操作。
+## SECURITY DEFINER Functions
+
+所有寫入操作透過 `SECURITY DEFINER` Postgres function 執行，以 **authenticated client**（使用者的 session）呼叫。函式內部透過 `auth.uid()` 取得操作者身份，**不接受 client 傳入 actor user_id**。
+
+### Function 清單
+
+**`create_trip(p_name text, p_exchange_rate numeric)`**
+1. 以 `auth.uid()` 為 `created_by` INSERT trips
+2. INSERT trip_members（`user_id = auth.uid()`）
+3. 回傳 trip id
+
+**`join_trip(p_invite_token uuid)`**
+1. 查詢 trips WHERE invite_token = p_invite_token
+2. 無效 token → RAISE EXCEPTION
+3. 已是成員 → 直接回傳 trip id（幂等）
+4. INSERT trip_members（`user_id = auth.uid()`）
+5. 回傳 trip id
+
+**`create_expense_with_splits(p_trip_id, p_title, p_amount, p_currency, p_paid_by, p_splits jsonb)`**
+1. 驗證 `auth.uid()` 在 trip_members 中（呼叫者是成員）
+2. 驗證 p_paid_by 在 trip_members 中
+3. 驗證每個 splits.user_id 在 trip_members 中
+4. 驗證 sum(splits.amount) == p_amount（exact match）
+5. 若 p_currency = 'JPY'：驗證 p_amount 和每筆 split amount 為整數
+6. INSERT expenses + INSERT expense_splits（單一 transaction）
+
+**`update_trip_exchange_rate(p_trip_id uuid, p_rate numeric)`**
+1. 驗證 `auth.uid()` 在 trip_members 中
+2. 驗證 p_rate > 0
+3. UPDATE trips SET exchange_rate = p_rate
+
+### Migration 中的 privilege 設定
+
+每個 function 必須明確撤銷預設執行權限：
+
+```sql
+-- 套用到每個 function
+REVOKE EXECUTE ON FUNCTION create_trip FROM public, anon;
+GRANT  EXECUTE ON FUNCTION create_trip TO authenticated;
+
+-- join_trip / create_expense_with_splits / update_trip_exchange_rate 同上
+```
+
+這確保匿名訪客無法呼叫任何 function。
 
 ---
 
@@ -153,15 +191,15 @@ callback: 交換 code → 寫 cookie → upsert profiles → redirect /trips
 /trips/new → 填名稱
 Server Action: 呼叫 ExchangeRate API 取得 JPY/TWD 即時匯率
              → 若 API 失敗，回傳錯誤讓使用者手動輸入
-             → 呼叫 create_trip(name, exchange_rate) RPC（service role）
-               → DB 內原子: INSERT trips + INSERT trip_members（建立者）
+             → 呼叫 create_trip(name, exchange_rate)（authenticated client，SECURITY DEFINER）
+               → DB 內原子: INSERT trips + INSERT trip_members（建立者 = auth.uid()）
              → redirect /trips/[id]
 ```
 
 ### 加入行程（分享連結）
 ```
 /join/[token] → 檢查登入（未登入 → /login?next=/join/[token]）
-Server Action（service role）: 查詢 trips WHERE invite_token = token
+Server Action: 呼叫 join_trip(token)（authenticated client，SECURITY DEFINER）
              → 無效 token → 顯示「連結無效」
              → 已是成員 → redirect /trips/[id]
              → 新成員 → INSERT trip_members → redirect /trips/[id]
@@ -172,9 +210,9 @@ Server Action（service role）: 查詢 trips WHERE invite_token = token
 行程頁點「新增費用」→ Modal 開啟
 填寫：標題、金額、幣別、付款人、分擔成員、分擔金額（均攤或自訂）
 Client 驗證：sum(splits) == expense.amount（快速 UX 回饋）
-Server Action: 呼叫 create_expense_with_splits RPC（service role）
-             → DB 內再次驗證：成員身份、金額總和、JPY 整數
-             → 若驗證失敗，RPC 拋出例外，Server Action 回傳錯誤訊息
+Server Action: 呼叫 create_expense_with_splits(...)（authenticated client，SECURITY DEFINER）
+             → DB 內驗證：auth.uid() 是成員、paid_by/splits 是成員、金額總和、JPY 整數
+             → 若驗證失敗，function RAISE EXCEPTION，Server Action 回傳錯誤訊息
 ```
 
 ### 分帳計算（server-side）
@@ -209,7 +247,7 @@ Debt minimization（簡化轉帳清單）：
 
 - 行程建立時呼叫 ExchangeRate-API 取得即時 JPY/TWD 匯率
 - 匯率儲存在 `trips.exchange_rate`，整個行程共用
-- 任何行程成員可在行程詳細頁（`/trips/[id]`）inline 修改匯率（點擊匯率旁的 ✏️）
+- 任何行程成員可在行程詳細頁（`/trips/[id]`）inline 修改匯率（點擊 ✏️ → 呼叫 `update_trip_exchange_rate` function）
 - API 失敗時 UI 顯示提示，允許手動輸入後繼續建立
 
 ---
@@ -241,7 +279,7 @@ supabase/
 ├── migrations/
 │   └── 0001_init.sql           # 所有 tables + RLS policies
 └── functions/
-    └── expense_helpers.sql     # create_trip, join_trip, create_expense_with_splits RPC
+    └── expense_helpers.sql     # create_trip, join_trip, create_expense_with_splits, update_trip_exchange_rate（含 REVOKE/GRANT）
 
 src/
 ├── app/
