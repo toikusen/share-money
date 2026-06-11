@@ -3,6 +3,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 
 export async function createTripAction(formData: FormData) {
   const name = formData.get('name') as string
@@ -42,5 +43,7 @@ export async function updateExchangeRateAction(tripId: string, rate: number) {
     p_rate: rate,
   })
   if (error) return { error: error.message }
+  revalidatePath(`/trips/${tripId}`)
+  revalidatePath(`/trips/${tripId}/balance`)
   return { success: true }
 }

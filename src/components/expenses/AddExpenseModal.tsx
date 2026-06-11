@@ -149,11 +149,12 @@ export function AddExpenseModal({ tripId, members, currentUserId }: Props) {
           <div className="flex flex-col gap-2">
             {members.map(m => {
               const checked = selectedIds.includes(m.id)
-              const equalAmounts = splitMode === 'equal'
-                ? splitEqually(numAmount, selectedIds.length, currency)
+              const selectedMembers = members.filter(x => selectedIds.includes(x.id))
+              const equalAmounts = splitMode === 'equal' && numAmount > 0
+                ? splitEqually(numAmount, selectedMembers.length, currency)
                 : null
               const equalAmt = equalAmounts && checked
-                ? equalAmounts[selectedIds.indexOf(m.id)]
+                ? equalAmounts[selectedMembers.findIndex(x => x.id === m.id)]
                 : null
               return (
                 <div key={m.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
