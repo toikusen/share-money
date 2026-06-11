@@ -45,20 +45,21 @@ export function AddExpenseModal({ tripId, members, currentUserId }: Props) {
     e.preventDefault()
     setError(null)
     const numAmount = parseFloat(amount)
-    const result = await new Promise<{ error?: string; success?: boolean }>(resolve => {
+    let result: { error?: string; success?: boolean } | undefined
+    await new Promise<void>(resolve => {
       startTransition(async () => {
-        const r = await createExpenseAction({
+        result = await createExpenseAction({
           tripId,
           title,
           amount: numAmount,
           currency,
           paidBy,
           splits: computedSplits(),
-        })
-        resolve(r ?? { success: true })
+        }) ?? { success: true }
+        resolve()
       })
     })
-    if (result.error) { setError(result.error); return }
+    if (result?.error) { setError(result.error); return }
     setOpen(false)
     setTitle(''); setAmount(''); setCurrency('JPY'); setPaidBy(currentUserId)
     setSplitMode('equal'); setSelectedIds(members.map(m => m.id)); setCustomAmounts({})

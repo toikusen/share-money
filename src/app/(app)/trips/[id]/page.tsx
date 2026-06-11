@@ -4,7 +4,10 @@ import { AddExpenseModal } from '@/components/expenses/AddExpenseModal'
 import { CopyInviteButton } from '@/components/trips/CopyInviteButton'
 import { formatAmount } from '@/lib/utils/currency'
 import { updateExchangeRateAction } from '@/lib/actions/trips'
+import { deleteExpenseAction } from '@/lib/actions/expenses'
 import Link from 'next/link'
+
+type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
 
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -19,7 +22,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
     .select('user_id, profiles(id, display_name, avatar_url, created_at)')
     .eq('trip_id', id)
 
-  const members = (memberships?.map(m => m.profiles).filter(Boolean) ?? []) as any[]
+  const members = (memberships?.map(m => m.profiles).filter(Boolean) ?? []) as unknown as MemberProfile[]
 
   const { data: expenses } = await supabase
     .from('expenses')
@@ -63,7 +66,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       <section className="mb-6">
         <h2 className="text-sm font-semibold text-gray-500 mb-2">成員（{members.length} 人）</h2>
         <div className="flex flex-wrap gap-2">
-          {members.map((m: any) => (
+          {members.map((m) => (
             <span key={m.id} className="bg-gray-100 rounded-full px-3 py-1 text-sm">
               {m.display_name}
             </span>
@@ -76,31 +79,24 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       <section>
         <h2 className="text-sm font-semibold text-gray-500 mb-3">費用明細</h2>
         <div className="flex flex-col gap-2 mb-3">
-          {expenses?.map(expense => {
-            async function deleteExpense() {
-              'use server'
-              const { deleteExpenseAction } = await import('@/lib/actions/expenses')
-              await deleteExpenseAction(expense.id, id)
-            }
-            return (
-              <div key={expense.id} className="bg-white border border-gray-200 rounded-xl p-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="font-medium text-sm">{expense.title}</div>
-                    <div className="text-xs text-gray-500 mt-0.5">
-                      {formatAmount(expense.amount, expense.currency as any)} ·{' '}
-                      {(expense.payer as any)?.display_name} 付
-                    </div>
+          {expenses?.map(expense => (
+            <div key={expense.id} className="bg-white border border-gray-200 rounded-xl p-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="font-medium text-sm">{expense.title}</div>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {formatAmount(expense.amount, expense.currency as any)} ·{' '}
+                    {(expense.payer as any)?.display_name} 付
                   </div>
-                  {expense.created_by === user!.id && (
-                    <form action={deleteExpense}>
-                      <button type="submit" className="text-xs text-red-400 hover:text-red-600">刪除</button>
-                    </form>
-                  )}
                 </div>
+                {expense.created_by === user!.id && (
+                  <form action={deleteExpenseAction.bind(null, expense.id, id) as unknown as (formData: FormData) => Promise<void>}>
+                    <button type="submit" className="text-xs text-red-400 hover:text-red-600">刪除</button>
+                  </form>
+                )}
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
         <AddExpenseModal tripId={id} members={members} currentUserId={user!.id} />
       </section>

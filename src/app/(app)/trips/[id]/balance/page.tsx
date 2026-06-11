@@ -2,7 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { calculateNetBalances, minimizeTransfers } from '@/lib/utils/balance'
 import { convertToTWD } from '@/lib/utils/currency'
+import type { Currency } from '@/types/database'
 import Link from 'next/link'
+
+type MemberProfile = { id: string; display_name: string }
+type ExpenseRow = { id: string; amount: number; currency: Currency; paid_by: string }
+type SplitRow = { expense_id: string; user_id: string; amount: number }
 
 export default async function BalancePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -17,7 +22,10 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
     .eq('trip_id', id)
 
   const profileMap = new Map(
-    memberships?.map(m => [(m.profiles as any).id, (m.profiles as any).display_name]) ?? []
+    memberships?.map(m => {
+      const profile = m.profiles as unknown as MemberProfile
+      return [profile.id, profile.display_name]
+    }) ?? []
   )
 
   const { data: expenses } = await supabase
@@ -31,8 +39,8 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
     .in('expense_id', expenses?.map(e => e.id) ?? [])
 
   const balances = calculateNetBalances(
-    (expenses ?? []) as any,
-    (splits ?? []) as any,
+    (expenses ?? []) as ExpenseRow[],
+    (splits ?? []) as SplitRow[],
     trip.exchange_rate
   )
   const transfers = minimizeTransfers(balances)
@@ -68,9 +76,9 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
           {transfers.map((t, i) => (
             <div key={i} className="bg-white border border-red-100 rounded-xl p-4 flex justify-between items-center">
               <div className="text-sm">
-                <span className="font-medium text-red-600">{profileMap.get(t.from)}</span>
+                <span className="font-medium text-red-600">{profileMap.get(t.from) ?? '未知成員'}</span>
                 <span className="text-gray-400"> 付給 </span>
-                <span className="font-medium text-green-700">{profileMap.get(t.to)}</span>
+                <span className="font-medium text-green-700">{profileMap.get(t.to) ?? '未知成員'}</span>
               </div>
               <div className="font-semibold text-gray-900">NT${t.amountTWD.toFixed(2)}</div>
             </div>

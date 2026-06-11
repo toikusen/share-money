@@ -1,10 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { TripCard } from '@/components/trips/TripCard'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 export default async function TripsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   const { data: memberships } = await supabase
     .from('trip_members')
