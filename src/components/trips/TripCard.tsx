@@ -17,8 +17,7 @@ export function TripCard({ trip, currentUserId }: { trip: Trip; currentUserId: s
           </div>
         )}
         <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          1 JPY = {trip.exchange_rate} TWD ·{' '}
-          {new Date(trip.created_at).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' })}
+          1 JPY = {trip.exchange_rate} TWD
         </div>
       </Link>
       <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-gray-800">
