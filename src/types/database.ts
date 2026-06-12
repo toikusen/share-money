@@ -54,3 +54,41 @@ export type ExpenseWithSplits = Expense & {
   expense_splits: ExpenseSplit[]
   payer: Profile
 }
+
+export type ActivityAction =
+  | 'trip.created'
+  | 'trip.rate_updated'
+  | 'member.joined'
+  | 'expense.created'
+  | 'expense.updated'
+  | 'expense.deleted'
+
+// Changed-fields-only diff stored in activity_logs.details.old / .new.
+// amount and currency are always written together.
+export type ExpenseDiff = {
+  title?: string
+  amount?: number
+  currency?: Currency
+  paid_by?: string
+  paid_at?: string
+  splits?: SplitInput[]
+}
+
+export type ActivityDetails = {
+  title?: string
+  amount?: number
+  currency?: Currency
+  old_rate?: number
+  new_rate?: number
+  old?: ExpenseDiff
+  new?: ExpenseDiff
+}
+
+export type ActivityLog = {
+  id: string
+  trip_id: string
+  actor_id: string
+  action: ActivityAction
+  details: ActivityDetails
+  created_at: string
+}
