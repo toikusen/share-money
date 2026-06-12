@@ -26,7 +26,7 @@ export default async function SettingsPage() {
         <h1 className="text-xl font-bold">設定</h1>
       </div>
 
-      <section className="bg-white rounded-xl border border-gray-200 p-6">
+      <section className="bg-white rounded-xl border border-gray-200 p-6 dark:bg-gray-900 dark:border-gray-800">
         <DisplayNameForm initialName={profile.display_name} />
       </section>
     </main>

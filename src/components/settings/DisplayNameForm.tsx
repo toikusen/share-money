@@ -25,7 +25,7 @@ export function DisplayNameForm({ initialName }: { initialName: string }) {
   return (
     <form action={handleSubmit} className="flex flex-col gap-3">
       <div>
-        <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           顯示名稱
         </label>
         <input
@@ -35,7 +35,7 @@ export function DisplayNameForm({ initialName }: { initialName: string }) {
           required
           maxLength={DISPLAY_NAME_MAX_LENGTH}
           defaultValue={initialName}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
         />
         <p className="text-xs text-gray-400 mt-1">其他成員會在行程與分帳中看到這個名稱</p>
       </div>

@@ -8,7 +8,7 @@ export function TripCard({ trip, currentUserId }: { trip: Trip; currentUserId: s
   const canDelete = trip.created_by === currentUserId
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-sm transition">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-sm transition dark:bg-gray-900 dark:border-gray-800 dark:hover:border-indigo-700">
       <Link href={`/trips/${trip.id}`} className="block">
         <div className="font-semibold text-gray-900 dark:text-gray-100">{trip.name}</div>
         {(trip.start_date || trip.end_date) && (
@@ -16,12 +16,12 @@ export function TripCard({ trip, currentUserId }: { trip: Trip; currentUserId: s
             {formatTripDateRange(trip.start_date, trip.end_date)}
           </div>
         )}
-        <div className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           1 JPY = {trip.exchange_rate} TWD ·{' '}
           {new Date(trip.created_at).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' })}
         </div>
       </Link>
-      <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3">
+      <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-gray-800">
         <Link href={`/trips/${trip.id}`} className="text-sm font-medium text-indigo-600 hover:text-indigo-700">
           開啟
         </Link>
