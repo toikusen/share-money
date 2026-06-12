@@ -29,6 +29,23 @@ export default async function NewTripPage() {
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">日期區間<span className="text-gray-400 font-normal ml-1">（選填）</span></label>
+          <div className="flex items-center gap-2">
+            <input
+              name="start_date"
+              type="date"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            />
+            <span className="text-gray-400 text-sm shrink-0">–</span>
+            <input
+              name="end_date"
+              type="date"
+              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            />
+          </div>
+        </div>
+
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             匯率（1 JPY = ? TWD）
           </label>

@@ -9,6 +9,8 @@ export async function createTripAction(formData: FormData) {
   const name = formData.get('name') as string
   const rateStr = formData.get('exchange_rate') as string
   const exchangeRate = parseFloat(rateStr)
+  const startDate = (formData.get('start_date') as string) || null
+  const endDate = (formData.get('end_date') as string) || null
 
   if (!name?.trim()) return { error: '請輸入行程名稱' }
   if (isNaN(exchangeRate) || exchangeRate <= 0) return { error: '請輸入有效匯率' }
@@ -17,10 +19,33 @@ export async function createTripAction(formData: FormData) {
   const { data, error } = await supabase.rpc('create_trip', {
     p_name: name.trim(),
     p_exchange_rate: exchangeRate,
+    ...(startDate ? { p_start_date: startDate } : {}),
+    ...(endDate ? { p_end_date: endDate } : {}),
   })
 
   if (error) return { error: error.message }
   redirect(`/trips/${data}`)
+}
+
+export async function updateTripInfoAction(tripId: string, formData: FormData) {
+  const name = formData.get('name') as string
+  const startDate = (formData.get('start_date') as string) || null
+  const endDate = (formData.get('end_date') as string) || null
+
+  if (!name?.trim()) return { error: '請輸入行程名稱' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('update_trip_info', {
+    p_trip_id: tripId,
+    p_name: name.trim(),
+    ...(startDate ? { p_start_date: startDate } : {}),
+    ...(endDate ? { p_end_date: endDate } : {}),
+  })
+
+  if (error) return { error: error.message }
+  revalidatePath(`/trips/${tripId}`)
+  revalidatePath('/trips')
+  return { success: true }
 }
 
 export async function fetchExchangeRate(): Promise<number | null> {

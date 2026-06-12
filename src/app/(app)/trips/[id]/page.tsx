@@ -6,6 +6,7 @@ import { InviteCard } from '@/components/trips/InviteCard'
 import { deleteTripAction, updateExchangeRateAction } from '@/lib/actions/trips'
 import { getRequestSiteUrl } from '@/lib/site-url'
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton'
+import { EditTripInfoButton } from '@/components/trips/EditTripInfoButton'
 import Link from 'next/link'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
@@ -71,7 +72,18 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         </Link>
 
         <div className="flex items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 leading-snug">{trip.name}</h1>
+          {canDeleteTrip ? (
+            <EditTripInfoButton
+              tripId={id}
+              initialName={trip.name}
+              initialStartDate={trip.start_date}
+              initialEndDate={trip.end_date}
+            />
+          ) : (
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 leading-snug">{trip.name}</h1>
+            </div>
+          )}
           {canDeleteTrip && (
             <DeleteTripButton
               action={deleteTripAction.bind(null, id) as (formData: FormData) => Promise<void>}

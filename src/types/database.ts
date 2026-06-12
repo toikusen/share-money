@@ -14,6 +14,8 @@ export type Trip = {
   exchange_rate: number
   invite_token: string
   created_at: string
+  start_date: string | null
+  end_date: string | null
 }
 
 export type TripMember = {

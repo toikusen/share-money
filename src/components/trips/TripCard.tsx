@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Trip } from '@/types/database'
 import { deleteTripAction } from '@/lib/actions/trips'
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton'
+import { formatTripDateRange } from '@/lib/utils/datetime'
 
 export function TripCard({ trip, currentUserId }: { trip: Trip; currentUserId: string }) {
   const canDelete = trip.created_by === currentUserId
@@ -9,8 +10,13 @@ export function TripCard({ trip, currentUserId }: { trip: Trip; currentUserId: s
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:shadow-sm transition">
       <Link href={`/trips/${trip.id}`} className="block">
-        <div className="font-semibold text-gray-900">{trip.name}</div>
-        <div className="text-sm text-gray-500 mt-1">
+        <div className="font-semibold text-gray-900 dark:text-gray-100">{trip.name}</div>
+        {(trip.start_date || trip.end_date) && (
+          <div className="text-xs font-medium text-indigo-500 dark:text-indigo-400 mt-0.5">
+            {formatTripDateRange(trip.start_date, trip.end_date)}
+          </div>
+        )}
+        <div className="text-sm text-gray-400 dark:text-gray-500 mt-1">
           1 JPY = {trip.exchange_rate} TWD ·{' '}
           {new Date(trip.created_at).toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei' })}
         </div>

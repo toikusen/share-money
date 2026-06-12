@@ -66,22 +66,33 @@ export function ExpenseList({ tripId, expenses, members, currentUserId }: Props)
             type="button"
             suppressHydrationWarning
             onClick={() => toggle(group.date)}
-            className="flex items-center justify-between pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 w-full text-left"
+            className={`flex items-center justify-between w-full mt-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+              open
+                ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'
+                : 'text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-white/8 hover:bg-gray-200/70 dark:hover:bg-white/12'
+            }`}
           >
-            <span>{group.date}</span>
-            <svg
-              width="11" height="11"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}
-              aria-hidden="true"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
+            <span suppressHydrationWarning>{group.date}</span>
+            <div className="flex items-center gap-1.5">
+              {!open && (
+                <span className="tabular-nums text-[10px] font-medium text-gray-400 dark:text-gray-500">
+                  {group.items.length} 筆
+                </span>
+              )}
+              <svg
+                width="13" height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}
+                aria-hidden="true"
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </div>
           </button>
           {open && group.items.map(expense => (
             <div key={expense.id} className="bg-white border border-gray-100 rounded-xl p-3.5 shadow-sm dark:bg-gray-900 dark:border-gray-800">
