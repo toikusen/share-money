@@ -33,17 +33,15 @@ export default async function LoginPage({
       {/* Hero brand block */}
       <div className="flex flex-col items-center mb-10">
         <div className="h-16 w-16 rounded-2xl bg-indigo-600 flex items-center justify-center mb-5 shadow-lg shadow-indigo-200 dark:shadow-indigo-900/50">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="8" stroke="white" strokeWidth="1.75"/>
-            <line x1="12" y1="4" x2="12" y2="20" stroke="white" strokeWidth="1.75"/>
-            <line x1="8.5" y1="9" x2="15.5" y2="9" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-            <line x1="8.5" y1="15" x2="15.5" y2="15" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+          <svg width="44" height="32" viewBox="0 0 22 16" fill="none" aria-hidden="true">
+            <circle cx="7" cy="8" r="6" fill="white" fillOpacity="0.3"/>
+            <circle cx="15" cy="8" r="6" fill="white"/>
+            <line x1="15" y1="3.5" x2="15" y2="12.5" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M17.5 5.5C17.5 4.5 16.5 4 15 4C13.5 4 12.5 4.7 12.5 6C12.5 7 13.5 7.5 15 8C16.5 8.5 17.5 9 17.5 10C17.5 11.3 16.5 12 15 12C13.5 12 12.5 11.5 12.5 10.5" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
           </svg>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight mb-1 select-none">
-          <span className="text-indigo-600 dark:text-indigo-400">share</span>
-          <span className="text-gray-300 dark:text-gray-600 font-normal mx-1">·</span>
-          <span className="text-gray-900 dark:text-gray-100">money</span>
+        <h1 className="text-3xl font-bold tracking-tight mb-1 select-none text-indigo-600 dark:text-indigo-400">
+          share<span className="text-gray-300 dark:text-gray-600 font-normal mx-1">·</span>money
         </h1>
         <p className="text-sm text-gray-400 dark:text-gray-500">旅遊分帳，輕鬆不傷感情</p>
       </div>

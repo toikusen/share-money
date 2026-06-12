@@ -36,19 +36,21 @@ export default async function TripsPage() {
       {/* Brand topbar */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
-          {/* Logomark: split coin */}
+          {/* Logomark: two overlapping coins with $ — matches PWA icon */}
           <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <circle cx="12" cy="12" r="8" stroke="white" strokeWidth="2"/>
-              <line x1="12" y1="4" x2="12" y2="20" stroke="white" strokeWidth="2"/>
-              <line x1="9" y1="9" x2="15" y2="9" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-              <line x1="9" y1="15" x2="15" y2="15" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+            <svg width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden="true">
+              {/* Left coin — transparent */}
+              <circle cx="7" cy="8" r="6" fill="white" fillOpacity="0.3"/>
+              {/* Right coin — solid */}
+              <circle cx="15" cy="8" r="6" fill="white"/>
+              {/* $ vertical line */}
+              <line x1="15" y1="3.5" x2="15" y2="12.5" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round"/>
+              {/* $ S-curve */}
+              <path d="M17.5 5.5C17.5 4.5 16.5 4 15 4C13.5 4 12.5 4.7 12.5 6C12.5 7 13.5 7.5 15 8C16.5 8.5 17.5 9 17.5 10C17.5 11.3 16.5 12 15 12C13.5 12 12.5 11.5 12.5 10.5" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
             </svg>
           </div>
-          <span className="text-[15px] font-semibold tracking-tight select-none">
-            <span className="text-indigo-600 dark:text-indigo-400">share</span>
-            <span className="text-gray-300 dark:text-gray-600 mx-0.5 font-normal">·</span>
-            <span className="text-gray-800 dark:text-gray-100">money</span>
+          <span className="text-[15px] font-semibold tracking-tight select-none text-indigo-600 dark:text-indigo-400">
+            share<span className="text-gray-300 dark:text-gray-600 mx-0.5 font-normal">·</span>money
           </span>
         </div>
         <Link
