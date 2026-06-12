@@ -137,17 +137,20 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       <section>
         <div className="flex items-center justify-between mb-1">
           <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300">費用明細</h2>
-          <Link
-            href={`/trips/${id}/activity`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-indigo-500 dark:hover:text-indigo-300"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8" />
-              <path d="M3 3v5h5" />
-              <path d="M12 7v5l3 2" />
-            </svg>
-            編輯紀錄
-          </Link>
+          <div className="flex items-center gap-2">
+            <AddExpenseModal tripId={id} members={members} currentUserId={user!.id} compact />
+            <Link
+              href={`/trips/${id}/activity`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-indigo-500 dark:hover:text-indigo-300"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+              編輯紀錄
+            </Link>
+          </div>
         </div>
         <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
           {expenseRows.length > 0
@@ -155,7 +158,6 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             : '新增費用後，明細會依付款日期分組顯示'}
         </p>
         <ExpenseList tripId={id} expenses={expenseRows} members={members} currentUserId={user!.id} />
-        <AddExpenseModal tripId={id} members={members} currentUserId={user!.id} />
       </section>
     </main>
   )
