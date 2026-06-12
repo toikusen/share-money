@@ -55,14 +55,6 @@ export type ExpenseWithSplits = Expense & {
   payer: Profile
 }
 
-export type ActivityAction =
-  | 'trip.created'
-  | 'trip.rate_updated'
-  | 'member.joined'
-  | 'expense.created'
-  | 'expense.updated'
-  | 'expense.deleted'
-
 // Changed-fields-only diff stored in activity_logs.details.old / .new.
 // amount and currency are always written together.
 export type ExpenseDiff = {
@@ -74,21 +66,18 @@ export type ExpenseDiff = {
   splits?: SplitInput[]
 }
 
-export type ActivityDetails = {
-  title?: string
-  amount?: number
-  currency?: Currency
-  old_rate?: number
-  new_rate?: number
-  old?: ExpenseDiff
-  new?: ExpenseDiff
-}
+// Discriminated on action so consumers get narrowing per event shape.
+export type ActivityEvent =
+  | { action: 'trip.created' | 'member.joined'; details: Record<string, never> }
+  | { action: 'trip.rate_updated'; details: { old_rate: number; new_rate: number } }
+  | { action: 'expense.created' | 'expense.deleted'; details: { title: string; amount: number; currency: Currency } }
+  | { action: 'expense.updated'; details: { title: string; old: ExpenseDiff; new: ExpenseDiff } }
+
+export type ActivityAction = ActivityEvent['action']
 
 export type ActivityLog = {
   id: string
   trip_id: string
   actor_id: string
-  action: ActivityAction
-  details: ActivityDetails
   created_at: string
-}
+} & ActivityEvent
