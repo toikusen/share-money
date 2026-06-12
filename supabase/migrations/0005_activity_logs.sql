@@ -31,7 +31,9 @@ CREATE POLICY "activity_logs_select" ON activity_logs FOR SELECT TO authenticate
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION create_trip(p_name text, p_exchange_rate numeric)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE v_trip_id uuid;
 BEGIN
   INSERT INTO trips (name, created_by, exchange_rate)
@@ -48,7 +50,9 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION join_trip(p_invite_token uuid)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_trip_id uuid;
   v_count   integer;
@@ -71,7 +75,9 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION update_trip_exchange_rate(p_trip_id uuid, p_rate numeric)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE v_old_rate numeric;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = auth.uid()) THEN
@@ -102,7 +108,9 @@ CREATE OR REPLACE FUNCTION create_expense_with_splits(
   p_paid_by  uuid,
   p_paid_at  timestamptz,
   p_splits   jsonb
-) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_expense_id uuid;
   v_split      jsonb;
@@ -158,7 +166,9 @@ CREATE OR REPLACE FUNCTION update_expense_with_splits(
   p_paid_by    uuid,
   p_paid_at    timestamptz,
   p_splits     jsonb
-) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+) RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE
   v_old        expenses%ROWTYPE;
   v_split      jsonb;
@@ -251,7 +261,9 @@ $$;
 -- ============================================================
 
 CREATE OR REPLACE FUNCTION delete_expense(p_expense_id uuid)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
 DECLARE v_expense expenses%ROWTYPE;
 BEGIN
   -- Only the expense creator may delete (mirrors expenses_delete RLS policy)
