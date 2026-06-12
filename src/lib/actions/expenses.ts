@@ -8,7 +8,7 @@ import type { SplitInput, Currency } from '@/types/database'
 
 const RPC_ERROR_MESSAGES: Record<string, string> = {
   NOT_MEMBER: '你不是此行程成員',
-  NOT_OWNER: '只有建立者可以編輯此費用',
+  NOT_OWNER: '只有建立者可以編輯或刪除此費用',
   PAID_BY_NOT_MEMBER: '付款人不是行程成員',
   SPLIT_USER_NOT_MEMBER: '分擔成員中有非行程成員',
   SPLIT_SUM_MISMATCH: '分擔金額總和不等於費用金額',
@@ -97,12 +97,11 @@ export async function updateExpenseAction(params: {
 
 export async function deleteExpenseAction(expenseId: string, tripId: string) {
   const supabase = await createClient()
-  const { error } = await supabase
-    .from('expenses')
-    .delete()
-    .eq('id', expenseId)
+  const { error } = await supabase.rpc('delete_expense', {
+    p_expense_id: expenseId,
+  })
 
-  if (error) return { error: error.message }
+  if (error) return { error: mapRpcError(error.message) }
   revalidatePath(`/trips/${tripId}`)
   return { success: true }
 }
