@@ -11,6 +11,15 @@ type ActivityRow = {
   actor: { display_name: string } | null
 } & ActivityEvent
 
+function dotClass(action: ActivityRow['action']): string {
+  switch (action) {
+    case 'expense.created': return 'bg-emerald-500'
+    case 'expense.updated': return 'bg-indigo-500'
+    case 'expense.deleted': return 'bg-rose-500'
+    default: return 'bg-gray-300 dark:bg-gray-600'
+  }
+}
+
 export default async function ActivityPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
@@ -58,18 +67,22 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
     <main className="max-w-lg mx-auto px-4 py-8">
       <div className="flex items-center gap-3 mb-2">
         <Link href={`/trips/${id}`} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">←</Link>
-        <h1 className="text-xl font-bold">活動紀錄</h1>
+        <h1 className="text-xl font-bold">編輯紀錄</h1>
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
         {trip.name} · 最近 {rows.length} 筆異動
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-center text-gray-400 py-8">尚無活動紀錄</p>
+        <p className="text-center text-gray-400 py-8">尚無編輯紀錄</p>
       ) : (
-        <ol className="flex flex-col gap-2">
-          {rows.map(row => (
-            <li key={row.id} className="bg-white border border-gray-200 rounded-xl px-4 py-3 dark:bg-gray-900 dark:border-gray-800">
+        <ol className="relative ml-1.5 flex flex-col gap-5 border-l border-gray-200 pl-5 dark:border-gray-800">
+          {rows.map((row, i) => (
+            <li key={row.id} className="relative anim-rise" style={{ animationDelay: `${Math.min(i * 50, 500)}ms` }}>
+              <span
+                aria-hidden="true"
+                className={`absolute -left-[25px] top-1 h-2.5 w-2.5 rounded-full ring-4 ring-white dark:ring-[#0a0a0a] ${dotClass(row.action)}`}
+              />
               <p className="text-sm text-gray-800 dark:text-gray-100">
                 {formatActivityText(row, row.actor?.display_name ?? '未知成員', nameOf)}
               </p>
