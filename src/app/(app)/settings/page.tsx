@@ -30,22 +30,27 @@ export default async function SettingsPage() {
         <h1 className="text-xl font-bold">設定</h1>
       </div>
 
-      <div className="flex flex-col gap-4">
-        {/* Account info */}
-        <section className="bg-white rounded-xl border border-gray-200 p-4 dark:bg-gray-900 dark:border-gray-800">
-          <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mb-3">登入帳號</p>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-9 w-9 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">
-              {initial}
-            </div>
-            <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{email}</span>
+      <div className="flex flex-col gap-5">
+        {/* Display name */}
+        <section>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1">顯示名稱</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-5 dark:bg-gray-900 dark:border-gray-800">
+            <DisplayNameForm initialName={profile.display_name} />
           </div>
-          <SignOutButton />
         </section>
 
-        {/* Display name */}
-        <section className="bg-white rounded-xl border border-gray-200 p-6 dark:bg-gray-900 dark:border-gray-800">
-          <DisplayNameForm initialName={profile.display_name} />
+        {/* Account info */}
+        <section>
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1">登入帳號</p>
+          <div className="bg-white rounded-xl border border-gray-200 p-4 dark:bg-gray-900 dark:border-gray-800">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-9 w-9 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">
+                {initial}
+              </div>
+              <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{email}</span>
+            </div>
+            <SignOutButton />
+          </div>
         </section>
       </div>
     </main>

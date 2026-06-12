@@ -25,9 +25,7 @@ export function DisplayNameForm({ initialName }: { initialName: string }) {
   return (
     <form action={handleSubmit} className="flex flex-col gap-3">
       <div>
-        <label htmlFor="display_name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-          顯示名稱
-        </label>
+        <label htmlFor="display_name" className="sr-only">顯示名稱</label>
         <input
           id="display_name"
           name="display_name"
@@ -46,7 +44,7 @@ export function DisplayNameForm({ initialName }: { initialName: string }) {
       <button
         type="submit"
         disabled={isPending}
-        className="self-start bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50"
+        className="self-start bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50"
       >
         {isPending ? '儲存中…' : '儲存'}
       </button>
