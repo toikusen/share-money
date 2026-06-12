@@ -71,6 +71,7 @@ export type ActivityEvent =
   | { action: 'trip.created' | 'member.joined'; details: Record<string, never> }
   | { action: 'trip.rate_updated'; details: { old_rate: number; new_rate: number } }
   | { action: 'expense.created' | 'expense.deleted'; details: { title: string; amount: number; currency: Currency } }
+  // title is the post-update title snapshot, for display
   | { action: 'expense.updated'; details: { title: string; old: ExpenseDiff; new: ExpenseDiff } }
 
 export type ActivityAction = ActivityEvent['action']
