@@ -84,21 +84,22 @@ export function ExpenseList({ tripId, expenses, members, currentUserId }: Props)
             </svg>
           </button>
           {open && group.items.map(expense => (
-            <div key={expense.id} className="bg-white border border-gray-200 rounded-xl p-3 dark:bg-gray-900 dark:border-gray-800">
-              <div className="flex justify-between items-start gap-3">
+            <div key={expense.id} className="bg-white border border-gray-100 rounded-xl p-3.5 shadow-sm dark:bg-gray-900 dark:border-gray-800">
+              <div className="flex justify-between items-center gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="font-medium text-sm text-gray-900 break-words dark:text-gray-100">{expense.title}</div>
-                  <div className="text-xs text-gray-600 dark:text-gray-300 mt-0.5">
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                     <time suppressHydrationWarning dateTime={expense.paid_at} title={formatExpenseDateTime(expense.paid_at, timeZone)}>
                       {formatExpenseTime(expense.paid_at, timeZone)}
                     </time>
-                    {' · '}
-                    {formatAmount(expense.amount, expense.currency)} ·{' '}
-                    {expense.payer?.display_name} 付
+                    <span aria-hidden="true">·</span>
+                    <span className="font-medium text-gray-600 dark:text-gray-300">{formatAmount(expense.amount, expense.currency)}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{expense.payer?.display_name} 付</span>
                   </div>
                 </div>
                 {expense.created_by === currentUserId && (
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <EditExpenseButton
                       tripId={tripId}
                       members={members}
@@ -113,8 +114,22 @@ export function ExpenseList({ tripId, expenses, members, currentUserId }: Props)
                         splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
                       }}
                     />
-                    <form action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}>
-                      <button type="submit" className="text-xs text-red-400 hover:text-red-600">刪除</button>
+                    <form
+                      action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}
+                      className="flex items-center"
+                    >
+                      <button
+                        type="submit"
+                        aria-label="刪除費用"
+                        className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:text-gray-600 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                          <path d="M10 11v6M14 11v6" />
+                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                      </button>
                     </form>
                   </div>
                 )}
