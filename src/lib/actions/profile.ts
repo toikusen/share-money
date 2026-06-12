@@ -4,6 +4,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { validateDisplayName } from '@/lib/utils/profile'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 export async function updateDisplayNameAction(formData: FormData) {
   const supabase = await createClient()
@@ -26,4 +27,10 @@ export async function updateDisplayNameAction(formData: FormData) {
   // Display name appears across trips, expenses, and balance pages
   revalidatePath('/', 'layout')
   return { success: true }
+}
+
+export async function signOutAction() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
 }
