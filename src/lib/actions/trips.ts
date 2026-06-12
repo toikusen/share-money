@@ -25,11 +25,14 @@ export async function createTripAction(formData: FormData) {
 
 export async function fetchExchangeRate(): Promise<number | null> {
   try {
-    const res = await fetch('https://api.frankfurter.app/latest?from=JPY&to=TWD', {
+    const res = await fetch('https://tw.rter.info/capi.php', {
       next: { revalidate: 3600 },
     })
     const json = await res.json()
-    return json.rates?.TWD ?? null
+    const usdJpy: number = json['USDJPY']?.Exrate
+    const usdTwd: number = json['USDTWD']?.Exrate
+    if (!usdJpy || !usdTwd) return null
+    return Math.round((usdTwd / usdJpy) * 10000) / 10000
   } catch {
     return null
   }
@@ -46,4 +49,22 @@ export async function updateExchangeRateAction(tripId: string, rate: number) {
   revalidatePath(`/trips/${tripId}`)
   revalidatePath(`/trips/${tripId}/balance`)
   return { success: true }
+}
+
+export async function deleteTripAction(tripId: string): Promise<void> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const { error, count } = await supabase
+    .from('trips')
+    .delete({ count: 'exact' })
+    .eq('id', tripId)
+    .eq('created_by', user.id)
+
+  if (error) throw new Error(error.message)
+  if (count === 0) throw new Error('只有行程建立者可以刪除行程')
+
+  revalidatePath('/trips')
+  redirect('/trips')
 }

@@ -43,6 +43,10 @@ yarn-error.log*
 # opennextjs
 /.open-next/
 
+# deployment/tooling state
+/.wrangler/
+/supabase/.temp/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

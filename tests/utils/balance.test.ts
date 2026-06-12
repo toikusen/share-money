@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { calculateNetBalances, minimizeTransfers } from '@/lib/utils/balance'
+import { calculateNetBalances, calculateMemberStats, minimizeTransfers } from '@/lib/utils/balance'
 
 describe('calculateNetBalances', () => {
   it('alice paid for both: alice net positive, bob net negative', () => {
@@ -26,6 +26,54 @@ describe('calculateNetBalances', () => {
     const balances = calculateNetBalances(expenses, splits, 0.218)
     const total = balances.reduce((sum, b) => sum + b.netTWD, 0)
     expect(total).toBeCloseTo(0, 5)
+  })
+})
+
+describe('calculateMemberStats', () => {
+  it('returns paid, owed, and net per member', () => {
+    const expenses = [{ id: 'e1', amount: 1000, currency: 'JPY' as const, paid_by: 'alice' }]
+    const splits = [
+      { expense_id: 'e1', user_id: 'alice', amount: 500 },
+      { expense_id: 'e1', user_id: 'bob', amount: 500 },
+    ]
+    const stats = calculateMemberStats(expenses, splits, 0.218)
+    const alice = stats.find(s => s.userId === 'alice')!
+    const bob = stats.find(s => s.userId === 'bob')!
+    expect(alice).toEqual({ userId: 'alice', paidTWD: 218, owedTWD: 109, netTWD: 109 })
+    expect(bob).toEqual({ userId: 'bob', paidTWD: 0, owedTWD: 109, netTWD: -109 })
+  })
+
+  it('accumulates across multiple expenses and currencies', () => {
+    const expenses = [
+      { id: 'e1', amount: 1000, currency: 'JPY' as const, paid_by: 'alice' },
+      { id: 'e2', amount: 300, currency: 'TWD' as const, paid_by: 'bob' },
+    ]
+    const splits = [
+      { expense_id: 'e1', user_id: 'alice', amount: 500 },
+      { expense_id: 'e1', user_id: 'bob', amount: 500 },
+      { expense_id: 'e2', user_id: 'alice', amount: 150 },
+      { expense_id: 'e2', user_id: 'bob', amount: 150 },
+    ]
+    const stats = calculateMemberStats(expenses, splits, 0.218)
+    const alice = stats.find(s => s.userId === 'alice')!
+    // paid 218, owes 109 + 150 = 259 → net -41
+    expect(alice.paidTWD).toBeCloseTo(218, 2)
+    expect(alice.owedTWD).toBeCloseTo(259, 2)
+    expect(alice.netTWD).toBeCloseTo(-41, 2)
+  })
+
+  it('net matches calculateNetBalances', () => {
+    const expenses = [{ id: 'e1', amount: 999, currency: 'JPY' as const, paid_by: 'alice' }]
+    const splits = [
+      { expense_id: 'e1', user_id: 'alice', amount: 333 },
+      { expense_id: 'e1', user_id: 'bob', amount: 333 },
+      { expense_id: 'e1', user_id: 'carol', amount: 333 },
+    ]
+    const stats = calculateMemberStats(expenses, splits, 0.218)
+    const balances = calculateNetBalances(expenses, splits, 0.218)
+    for (const b of balances) {
+      expect(stats.find(s => s.userId === b.userId)!.netTWD).toBeCloseTo(b.netTWD, 2)
+    }
   })
 })
 

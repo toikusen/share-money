@@ -1,7 +1,15 @@
 import { joinTripAction } from '@/lib/actions/members'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
 export default async function JoinPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect(`/login?next=${encodeURIComponent(`/join/${token}`)}`)
+  }
 
   async function join() {
     'use server'

@@ -1,5 +1,6 @@
 // src/app/(auth)/auth/callback/route.ts
 import { createServerClient } from '@supabase/ssr'
+import { safeRedirectPath } from '@/lib/site-url'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -7,7 +8,7 @@ export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const next = searchParams.get('next')
-  const safeNext = next?.startsWith('/') ? next : '/trips'
+  const safeNext = safeRedirectPath(next)
 
   if (code) {
     const cookieStore = await cookies()

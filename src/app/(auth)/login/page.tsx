@@ -1,5 +1,6 @@
 // src/app/(auth)/login/page.tsx
 import { createClient } from '@/lib/supabase/server'
+import { getRequestSiteUrl, safeRedirectPath } from '@/lib/site-url'
 import { redirect } from 'next/navigation'
 
 export default async function LoginPage({
@@ -10,14 +11,14 @@ export default async function LoginPage({
   const { next } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (user) redirect(next?.startsWith('/') ? next : '/trips')
+  if (user) redirect(safeRedirectPath(next))
 
   async function signIn() {
     'use server'
     const supabase = await createClient()
     const { next: nextParam } = await searchParams
-    const callbackUrl = new URL('/auth/callback', process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000')
-    if (nextParam?.startsWith('/')) callbackUrl.searchParams.set('next', nextParam)
+    const callbackUrl = new URL('/auth/callback', await getRequestSiteUrl())
+    callbackUrl.searchParams.set('next', safeRedirectPath(nextParam))
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

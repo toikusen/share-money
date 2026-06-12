@@ -6,6 +6,44 @@ type SplitRow   = { expense_id: string; user_id: string; amount: number }
 
 export type NetBalance = { userId: string; netTWD: number }
 export type Transfer   = { from: string; to: string; amountTWD: number }
+export type MemberStat = { userId: string; paidTWD: number; owedTWD: number; netTWD: number }
+
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+/**
+ * Per-member settlement breakdown in TWD: how much each member paid
+ * up-front, their share of the costs, and the resulting net position.
+ */
+export function calculateMemberStats(
+  expenses: ExpenseRow[],
+  splits: SplitRow[],
+  exchangeRate: number
+): MemberStat[] {
+  const statMap = new Map<string, { paid: number; owed: number }>()
+  const entry = (userId: string) => {
+    const found = statMap.get(userId)
+    if (found) return found
+    const created = { paid: 0, owed: 0 }
+    statMap.set(userId, created)
+    return created
+  }
+
+  for (const expense of expenses) {
+    entry(expense.paid_by).paid += convertToTWD(expense.amount, expense.currency, exchangeRate)
+  }
+
+  for (const split of splits) {
+    const expense = expenses.find(e => e.id === split.expense_id)!
+    entry(split.user_id).owed += convertToTWD(split.amount, expense.currency, exchangeRate)
+  }
+
+  return Array.from(statMap.entries()).map(([userId, { paid, owed }]) => ({
+    userId,
+    paidTWD: round2(paid),
+    owedTWD: round2(owed),
+    netTWD: round2(paid - owed),
+  }))
+}
 
 export function calculateNetBalances(
   expenses: ExpenseRow[],

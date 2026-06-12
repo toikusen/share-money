@@ -1,40 +1,20 @@
--- supabase/functions/expense_helpers.sql
+-- Add an editable payment time for expenses and use it for chronological lists.
 
--- create_trip
-CREATE OR REPLACE FUNCTION create_trip(p_name text, p_exchange_rate numeric)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE v_trip_id uuid;
-BEGIN
-  INSERT INTO trips (name, created_by, exchange_rate)
-  VALUES (p_name, auth.uid(), p_exchange_rate)
-  RETURNING id INTO v_trip_id;
+ALTER TABLE public.expenses
+  ADD COLUMN IF NOT EXISTS paid_at timestamptz;
 
-  INSERT INTO trip_members (trip_id, user_id) VALUES (v_trip_id, auth.uid());
-  RETURN v_trip_id;
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION create_trip FROM public, anon;
-GRANT  EXECUTE ON FUNCTION create_trip TO authenticated;
+UPDATE public.expenses
+SET paid_at = created_at
+WHERE paid_at IS NULL;
 
--- join_trip
-CREATE OR REPLACE FUNCTION join_trip(p_invite_token uuid)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE v_trip_id uuid;
-BEGIN
-  SELECT id INTO v_trip_id FROM trips WHERE invite_token = p_invite_token;
-  IF v_trip_id IS NULL THEN RAISE EXCEPTION 'INVALID_TOKEN'; END IF;
+ALTER TABLE public.expenses
+  ALTER COLUMN paid_at SET DEFAULT now(),
+  ALTER COLUMN paid_at SET NOT NULL;
 
-  INSERT INTO trip_members (trip_id, user_id) VALUES (v_trip_id, auth.uid())
-  ON CONFLICT (trip_id, user_id) DO NOTHING;
+CREATE INDEX IF NOT EXISTS expenses_trip_paid_at_idx
+  ON public.expenses (trip_id, paid_at DESC, created_at DESC);
 
-  RETURN v_trip_id;
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION join_trip FROM public, anon;
-GRANT  EXECUTE ON FUNCTION join_trip TO authenticated;
-
--- create_expense_with_splits
-DROP FUNCTION IF EXISTS create_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
+DROP FUNCTION IF EXISTS public.create_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
 
 CREATE OR REPLACE FUNCTION create_expense_with_splits(
   p_trip_id  uuid,
@@ -90,8 +70,7 @@ $$;
 REVOKE EXECUTE ON FUNCTION create_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION create_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) TO authenticated;
 
--- update_expense_with_splits
-DROP FUNCTION IF EXISTS update_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
+DROP FUNCTION IF EXISTS public.update_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
 
 CREATE OR REPLACE FUNCTION update_expense_with_splits(
   p_expense_id uuid,
@@ -111,7 +90,6 @@ BEGIN
     RAISE EXCEPTION 'PAID_AT_REQUIRED';
   END IF;
 
-  -- Only the expense creator may edit (mirrors expenses_delete RLS policy)
   SELECT trip_id INTO v_trip_id FROM expenses
   WHERE id = p_expense_id AND created_by = auth.uid();
   IF v_trip_id IS NULL THEN RAISE EXCEPTION 'NOT_OWNER'; END IF;
@@ -147,17 +125,3 @@ END;
 $$;
 REVOKE EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) TO authenticated;
-
--- update_trip_exchange_rate
-CREATE OR REPLACE FUNCTION update_trip_exchange_rate(p_trip_id uuid, p_rate numeric)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = auth.uid()) THEN
-    RAISE EXCEPTION 'NOT_MEMBER';
-  END IF;
-  IF p_rate <= 0 THEN RAISE EXCEPTION 'INVALID_RATE'; END IF;
-  UPDATE trips SET exchange_rate = p_rate WHERE id = p_trip_id;
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION update_trip_exchange_rate FROM public, anon;
-GRANT  EXECUTE ON FUNCTION update_trip_exchange_rate TO authenticated;

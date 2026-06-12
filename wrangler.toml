@@ -7,6 +7,6 @@ compatibility_flags = ["nodejs_compat"]
 directory = ".open-next/assets"
 
 [vars]
-NEXT_PUBLIC_SUPABASE_URL = ""
-NEXT_PUBLIC_SUPABASE_ANON_KEY = ""
-NEXT_PUBLIC_SITE_URL = ""
+NEXT_PUBLIC_SUPABASE_URL = "https://oyufmenqqgnyhqbdrulx.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dWZtZW5xcWdueWhxYmRydWx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTc3OTIsImV4cCI6MjA5Njc3Mzc5Mn0.zbJxY0pDaRdN1987wr2odY9EHk2cEgdG3czwgBCWz14"
+NEXT_PUBLIC_SITE_URL = "https://share-money.tuyucheng0407.workers.dev"

@@ -30,6 +30,7 @@ export type Expense = {
   currency: Currency
   paid_by: string
   created_by: string
+  paid_at: string
   created_at: string
 }
 
