@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="zh-TW">
       <body className={`${inter.className} bg-gray-50 min-h-screen`}>
-        <NextTopLoader color="#4f46e5" height={3} showSpinner={false} shadow={false} />
+        <NextTopLoader color="#ffffff" height={2} showSpinner={false} shadow={false} />
         {children}
       </body>
     </html>
