@@ -266,10 +266,11 @@ SET search_path = public
 AS $$
 DECLARE v_expense expenses%ROWTYPE;
 BEGIN
+  SELECT * INTO v_expense FROM expenses WHERE id = p_expense_id;
+  -- Already gone (double-click, stale tab): deleting is idempotent.
+  IF v_expense.id IS NULL THEN RETURN; END IF;
   -- Only the expense creator may delete (mirrors expenses_delete RLS policy)
-  SELECT * INTO v_expense FROM expenses
-  WHERE id = p_expense_id AND created_by = auth.uid();
-  IF v_expense.id IS NULL THEN RAISE EXCEPTION 'NOT_OWNER'; END IF;
+  IF v_expense.created_by <> auth.uid() THEN RAISE EXCEPTION 'NOT_OWNER'; END IF;
 
   INSERT INTO activity_logs (trip_id, actor_id, action, details)
   VALUES (v_expense.trip_id, auth.uid(), 'expense.deleted',
