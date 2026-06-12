@@ -61,6 +61,9 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       <div className="flex items-center gap-3 mb-2">
         <Link href="/trips" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">←</Link>
         <h1 className="text-xl font-bold flex-1">{trip.name}</h1>
+        <Link href={`/trips/${id}/activity`} className="text-sm text-indigo-600 font-medium dark:text-indigo-300">
+          活動
+        </Link>
         <Link href={`/trips/${id}/balance`} className="text-sm text-indigo-600 font-medium dark:text-indigo-300">
           結算 →
         </Link>
