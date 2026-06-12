@@ -58,21 +58,41 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   return (
     <main className="max-w-lg mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-2">
-        <Link href="/trips" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">←</Link>
-        <h1 className="text-xl font-bold flex-1">{trip.name}</h1>
-        <Link href={`/trips/${id}/balance`} className="text-sm text-indigo-600 font-medium dark:text-indigo-300">
-          結算 →
+      {/* Header */}
+      <div className="mb-8">
+        <Link
+          href="/trips"
+          className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          所有行程
         </Link>
-      </div>
-      {canDeleteTrip && (
-        <div className="mb-5 flex justify-end">
-          <DeleteTripButton
-            action={deleteTripAction.bind(null, id) as (formData: FormData) => Promise<void>}
-            label="刪除行程"
-          />
+
+        <div className="flex items-start justify-between gap-2">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 leading-snug">{trip.name}</h1>
+          {canDeleteTrip && (
+            <DeleteTripButton
+              action={deleteTripAction.bind(null, id) as (formData: FormData) => Promise<void>}
+              label="刪除行程"
+              iconOnly
+            />
+          )}
         </div>
-      )}
+
+        <div className="mt-4">
+          <Link
+            href={`/trips/${id}/balance`}
+            className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          >
+            結算帳目
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </Link>
+        </div>
+      </div>
 
       {/* Exchange rate */}
       <form action={updateRate} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-6">

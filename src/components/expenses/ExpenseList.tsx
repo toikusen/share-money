@@ -1,10 +1,10 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { EditExpenseButton } from '@/components/expenses/EditExpenseButton'
 import { deleteExpenseAction } from '@/lib/actions/expenses'
 import { formatAmount } from '@/lib/utils/currency'
-import { formatExpenseDateTime, formatExpenseTime, groupByPaidDate } from '@/lib/utils/datetime'
+import { formatExpenseDate, formatExpenseDateTime, formatExpenseTime, groupByPaidDate } from '@/lib/utils/datetime'
 import type { Currency } from '@/types/database'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
@@ -42,15 +42,48 @@ export function ExpenseList({ tripId, expenses, members, currentUserId }: Props)
   )
 
   const expenseGroups = groupByPaidDate(expenses, timeZone)
+  const todayDate = formatExpenseDate(new Date().toISOString(), timeZone)
+  const [toggled, setToggled] = useState<Set<string>>(new Set())
+
+  // Today defaults open, past dates default closed.
+  // toggled tracks explicit user overrides.
+  const isOpen = (date: string) => toggled.has(date) ? date !== todayDate : date === todayDate
+
+  const toggle = (date: string) =>
+    setToggled(prev => {
+      const next = new Set(prev)
+      next.has(date) ? next.delete(date) : next.add(date)
+      return next
+    })
 
   return (
     <div className="flex flex-col gap-2 mb-3">
-      {expenseGroups.map(group => (
+      {expenseGroups.map(group => {
+        const open = isOpen(group.date)
+        return (
         <div key={group.date} className="flex flex-col gap-2">
-          <div suppressHydrationWarning className="pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
-            {group.date}
-          </div>
-          {group.items.map(expense => (
+          <button
+            type="button"
+            suppressHydrationWarning
+            onClick={() => toggle(group.date)}
+            className="flex items-center justify-between pt-2 pb-1 text-xs font-semibold text-gray-500 dark:text-gray-400 w-full text-left"
+          >
+            <span>{group.date}</span>
+            <svg
+              width="11" height="11"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={`transition-transform duration-200 ${open ? 'rotate-0' : '-rotate-90'}`}
+              aria-hidden="true"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+          {open && group.items.map(expense => (
             <div key={expense.id} className="bg-white border border-gray-200 rounded-xl p-3 dark:bg-gray-900 dark:border-gray-800">
               <div className="flex justify-between items-start gap-3">
                 <div className="min-w-0 flex-1">
@@ -89,7 +122,8 @@ export function ExpenseList({ tripId, expenses, members, currentUserId }: Props)
             </div>
           ))}
         </div>
-      ))}
+        )
+      })}
     </div>
   )
 }
