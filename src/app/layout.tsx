@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import NextTopLoader from 'nextjs-toploader'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -21,7 +22,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-TW">
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>{children}</body>
+      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
+        <NextTopLoader color="#4f46e5" height={3} showSpinner={false} shadow={false} />
+        {children}
+      </body>
     </html>
   )
 }
