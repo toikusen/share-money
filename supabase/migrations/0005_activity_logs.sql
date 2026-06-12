@@ -1,6 +1,35 @@
--- supabase/functions/expense_helpers.sql
+-- supabase/migrations/0005_activity_logs.sql
+-- Activity feed: one row per logical user operation, written only inside
+-- SECURITY DEFINER RPCs (no INSERT policy → clients cannot forge entries).
 
--- create_trip
+-- ============================================================
+-- TABLE
+-- ============================================================
+
+CREATE TABLE activity_logs (
+  id         uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  trip_id    uuid NOT NULL REFERENCES trips(id) ON DELETE CASCADE,
+  actor_id   uuid NOT NULL REFERENCES profiles(id),
+  action     text NOT NULL CHECK (action IN (
+    'trip.created', 'trip.rate_updated', 'member.joined',
+    'expense.created', 'expense.updated', 'expense.deleted'
+  )),
+  details    jsonb NOT NULL DEFAULT '{}',
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+CREATE INDEX activity_logs_trip_created_idx
+  ON activity_logs (trip_id, created_at DESC);
+
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "activity_logs_select" ON activity_logs FOR SELECT TO authenticated
+  USING (public.is_trip_member(trip_id));
+
+-- ============================================================
+-- TRIP / MEMBER RPCs (redefined with logging)
+-- ============================================================
+
 CREATE OR REPLACE FUNCTION create_trip(p_name text, p_exchange_rate numeric)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_trip_id uuid;
@@ -17,10 +46,7 @@ BEGIN
   RETURN v_trip_id;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION create_trip FROM public, anon;
-GRANT  EXECUTE ON FUNCTION create_trip TO authenticated;
 
--- join_trip
 CREATE OR REPLACE FUNCTION join_trip(p_invite_token uuid)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -43,11 +69,30 @@ BEGIN
   RETURN v_trip_id;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION join_trip FROM public, anon;
-GRANT  EXECUTE ON FUNCTION join_trip TO authenticated;
 
--- create_expense_with_splits
-DROP FUNCTION IF EXISTS create_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
+CREATE OR REPLACE FUNCTION update_trip_exchange_rate(p_trip_id uuid, p_rate numeric)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE v_old_rate numeric;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'NOT_MEMBER';
+  END IF;
+  IF p_rate <= 0 THEN RAISE EXCEPTION 'INVALID_RATE'; END IF;
+
+  SELECT exchange_rate INTO v_old_rate FROM trips WHERE id = p_trip_id;
+  IF v_old_rate = p_rate THEN RETURN; END IF;
+
+  UPDATE trips SET exchange_rate = p_rate WHERE id = p_trip_id;
+
+  INSERT INTO activity_logs (trip_id, actor_id, action, details)
+  VALUES (p_trip_id, auth.uid(), 'trip.rate_updated',
+          jsonb_build_object('old_rate', v_old_rate, 'new_rate', p_rate));
+END;
+$$;
+
+-- ============================================================
+-- EXPENSE RPCs (redefined with logging)
+-- ============================================================
 
 CREATE OR REPLACE FUNCTION create_expense_with_splits(
   p_trip_id  uuid,
@@ -104,11 +149,6 @@ BEGIN
   RETURN v_expense_id;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION create_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) FROM public, anon;
-GRANT  EXECUTE ON FUNCTION create_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) TO authenticated;
-
--- update_expense_with_splits
-DROP FUNCTION IF EXISTS update_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
 
 CREATE OR REPLACE FUNCTION update_expense_with_splits(
   p_expense_id uuid,
@@ -205,33 +245,11 @@ BEGIN
   END IF;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) FROM public, anon;
-GRANT  EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb) TO authenticated;
 
--- update_trip_exchange_rate
-CREATE OR REPLACE FUNCTION update_trip_exchange_rate(p_trip_id uuid, p_rate numeric)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
-DECLARE v_old_rate numeric;
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = auth.uid()) THEN
-    RAISE EXCEPTION 'NOT_MEMBER';
-  END IF;
-  IF p_rate <= 0 THEN RAISE EXCEPTION 'INVALID_RATE'; END IF;
+-- ============================================================
+-- NEW: delete_expense (replaces direct table delete in the action layer)
+-- ============================================================
 
-  SELECT exchange_rate INTO v_old_rate FROM trips WHERE id = p_trip_id;
-  IF v_old_rate = p_rate THEN RETURN; END IF;
-
-  UPDATE trips SET exchange_rate = p_rate WHERE id = p_trip_id;
-
-  INSERT INTO activity_logs (trip_id, actor_id, action, details)
-  VALUES (p_trip_id, auth.uid(), 'trip.rate_updated',
-          jsonb_build_object('old_rate', v_old_rate, 'new_rate', p_rate));
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION update_trip_exchange_rate FROM public, anon;
-GRANT  EXECUTE ON FUNCTION update_trip_exchange_rate TO authenticated;
-
--- delete_expense
 CREATE OR REPLACE FUNCTION delete_expense(p_expense_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE v_expense expenses%ROWTYPE;
