@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: '旅遊分帳工具',
     start_url: '/',
     display: 'standalone',
-    background_color: '#F9FAFB',
-    theme_color: '#4F46E5',
+    background_color: '#FAFAFA',
+    theme_color: '#4f61c9',
     lang: 'zh-TW',
     icons: [
       {
