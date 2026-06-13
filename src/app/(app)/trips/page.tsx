@@ -32,31 +32,27 @@ export default async function TripsPage() {
   }
 
   return (
-    <main className="max-w-lg mx-auto px-4 pt-6 pb-8">
+    <main className="max-w-lg mx-auto px-5 pt-6 pb-10">
       {/* Brand topbar */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           {/* Logomark: two overlapping coins with $ — matches PWA icon */}
-          <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+          <div className="h-7 w-7 rounded-lg bg-accent flex items-center justify-center shrink-0">
             <svg width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden="true">
-              {/* Left coin — transparent */}
               <circle cx="7" cy="8" r="6" fill="white" fillOpacity="0.3"/>
-              {/* Right coin — solid */}
               <circle cx="15" cy="8" r="6" fill="white"/>
-              {/* $ vertical line */}
-              <line x1="15" y1="3.5" x2="15" y2="12.5" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round"/>
-              {/* $ S-curve */}
-              <path d="M17.5 5.5C17.5 4.5 16.5 4 15 4C13.5 4 12.5 4.7 12.5 6C12.5 7 13.5 7.5 15 8C16.5 8.5 17.5 9 17.5 10C17.5 11.3 16.5 12 15 12C13.5 12 12.5 11.5 12.5 10.5" stroke="#4f46e5" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+              <line x1="15" y1="3.5" x2="15" y2="12.5" stroke="#4f61c9" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M17.5 5.5C17.5 4.5 16.5 4 15 4C13.5 4 12.5 4.7 12.5 6C12.5 7 13.5 7.5 15 8C16.5 8.5 17.5 9 17.5 10C17.5 11.3 16.5 12 15 12C13.5 12 12.5 11.5 12.5 10.5" stroke="#4f61c9" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
             </svg>
           </div>
-          <span className="text-[15px] font-semibold tracking-tight select-none text-indigo-600 dark:text-indigo-400">
-            share<span className="text-gray-300 dark:text-gray-600 mx-0.5 font-normal">·</span>money
+          <span className="text-[15px] font-semibold tracking-tight select-none text-ink">
+            share<span className="text-ink-4 mx-0.5 font-normal">·</span>money
           </span>
         </div>
         <Link
           href="/settings"
           aria-label="設定"
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:text-gray-300 dark:hover:bg-white/8 transition-colors"
+          className="p-1.5 rounded-lg text-ink-4 hover:text-ink-2 hover:bg-fill transition-colors"
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3"/>
@@ -67,10 +63,10 @@ export default async function TripsPage() {
 
       {/* Page heading + action */}
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-gray-50">我的行程</h1>
+        <h1 className="text-[21px] font-bold tracking-tight text-ink">我的行程</h1>
         <Link
           href="/trips/new"
-          className="inline-flex items-center gap-1.5 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-indigo-500 active:scale-95 transition-all dark:bg-indigo-500 dark:hover:bg-indigo-400"
+          className="inline-flex items-center gap-1.5 bg-accent text-white text-[13px] font-semibold px-4 py-2 rounded-full hover:bg-accent-deep active:scale-95 transition-all"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14"/>
@@ -80,9 +76,9 @@ export default async function TripsPage() {
       </div>
 
       {trips?.length === 0 ? (
-        <p className="text-center text-gray-400 py-12">還沒有行程，點右上角建立第一個</p>
+        <p className="text-center text-sm text-ink-4 py-16">還沒有行程，點右上角建立第一個</p>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2.5">
           {trips?.map(trip => <TripCard key={trip.id} trip={trip} currentUserId={user.id} />)}
         </div>
       )}

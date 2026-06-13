@@ -2,9 +2,10 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { calculateMemberStats, minimizeTransfers } from '@/lib/utils/balance'
 import { convertToTWD } from '@/lib/utils/currency'
-import { PaidShareChart } from '@/components/balance/PaidShareChart'
-import { NetChart } from '@/components/balance/NetChart'
 import { TransferFlow } from '@/components/balance/TransferFlow'
+import { PaidVsShareChart } from '@/components/balance/PaidVsShareChart'
+import { CalcDisclosure } from '@/components/balance/CalcDisclosure'
+import { avatarBg, avatarFg, avatarChar, avatarHue } from '@/lib/utils/avatar'
 import type { Currency } from '@/types/database'
 import Link from 'next/link'
 
@@ -12,21 +13,13 @@ type MemberProfile = { id: string; display_name: string }
 type ExpenseRow = { id: string; amount: number; currency: Currency; paid_by: string }
 type SplitRow = { expense_id: string; user_id: string; amount: number }
 
-function StepHeading({ no, title, desc }: { no: string; title: string; desc: string }) {
-  return (
-    <div className="mb-4">
-      <div className="flex items-baseline gap-2">
-        <span className="font-mono text-[10px] tracking-[0.25em] text-indigo-400 dark:text-indigo-300">STEP {no}</span>
-        <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100">{title}</h2>
-      </div>
-      <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{desc}</p>
-    </div>
-  )
-}
+const twd = (n: number) => `NT$${Math.round(Math.abs(n)).toLocaleString('zh-TW')}`
 
 export default async function BalancePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const meId = user!.id
 
   const { data: trip, error: tripError } = await supabase.from('trips').select('*').eq('id', id).single()
   if (tripError && tripError.code !== 'PGRST116') {
@@ -77,7 +70,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   const stats = calculateMemberStats(expenseRows, (splits ?? []) as SplitRow[], trip.exchange_rate)
   const transfers = minimizeTransfers(stats.map(s => ({ userId: s.userId, netTWD: s.netTWD })))
 
-  // Include members with no expenses so every participant shows up in the charts
+  // Include members with no expenses so every participant shows up
   const allStats = Array.from(profileMap.keys()).map(userId =>
     stats.find(s => s.userId === userId) ?? { userId, paidTWD: 0, owedTWD: 0, netTWD: 0 }
   )
@@ -87,97 +80,126 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
     0
   )
 
-  const paidRows = allStats
-    .map(s => ({ name: nameOf(s.userId), paidTWD: s.paidTWD, owedTWD: s.owedTWD }))
-    .sort((a, b) => b.paidTWD - a.paidTWD)
-
-  const netRows = allStats
-    .map(s => ({ name: nameOf(s.userId), netTWD: s.netTWD }))
-    .sort((a, b) => b.netTWD - a.netTWD)
-
-  const debtors = allStats
-    .filter(s => s.netTWD < -0.005)
-    .sort((a, b) => a.netTWD - b.netTWD)
-    .map(s => ({ id: s.userId, name: nameOf(s.userId), amount: -s.netTWD }))
-
-  const creditors = allStats
-    .filter(s => s.netTWD > 0.005)
-    .sort((a, b) => b.netTWD - a.netTWD)
-    .map(s => ({ id: s.userId, name: nameOf(s.userId), amount: s.netTWD }))
-
   const flowTransfers = transfers.map(t => ({
     ...t,
     fromName: nameOf(t.from),
     toName: nameOf(t.to),
   }))
 
-  return (
-    <main className="max-w-lg mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href={`/trips/${id}`} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">←</Link>
-        <h1 className="text-xl font-bold">分帳結算</h1>
-      </div>
+  // 個人化重點:你會收到/需要付出多少
+  const myNet = allStats.find(s => s.userId === meId)?.netTWD ?? 0
+  const settled = Math.abs(myNet) < 0.005
+  const toMeCount = transfers.filter(t => t.to === meId).length
+  const fromMeCount = transfers.filter(t => t.from === meId).length
+  const heroTitle = settled ? '你的帳目' : myNet > 0 ? '全部結清後，你會收到' : '全部結清後，你需要付出'
+  const heroAmount = settled ? '已結清' : twd(myNet)
+  const heroClass = settled ? 'text-ink-3' : myNet > 0 ? 'text-gain' : 'text-owe'
+  const heroSub = settled
+    ? `不需任何轉帳 · 行程總費用 ${twd(totalTWD)}`
+    : myNet > 0
+      ? `來自 ${toMeCount} 筆轉帳 · 行程總費用 ${twd(totalTWD)}`
+      : `需轉出 ${fromMeCount} 筆 · 行程總費用 ${twd(totalTWD)}`
 
-      {/* Hero ticket */}
-      <div className="ticket-card rounded-2xl p-5 mb-8 text-indigo-100 anim-rise">
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="font-mono text-[10px] tracking-[0.3em] text-indigo-300/80 mb-1">SETTLEMENT</div>
-            <div className="text-xs text-indigo-200/80">{trip.name} · 行程總費用</div>
-            <div className="font-mono tabular-nums text-3xl font-bold text-white mt-1">
-              NT${totalTWD.toLocaleString('zh-TW', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-          </div>
-        </div>
-        <hr className="perforation my-4" />
-        <div className="flex justify-between font-mono tabular-nums text-[11px] text-indigo-200/90">
-          <span>{expenseRows.length} 筆費用</span>
-          <span>{profileMap.size} 位成員</span>
-          <span>1 JPY = {trip.exchange_rate} TWD</span>
-        </div>
+  // 計算過程:墊付 vs 應攤(淨額由高到低)
+  const chartRows = [...allStats]
+    .sort((a, b) => b.netTWD - a.netTWD)
+    .map(s => ({
+      name: nameOf(s.userId),
+      isMe: s.userId === meId,
+      hue: avatarHue(s.userId),
+      paidTWD: s.paidTWD,
+      owedTWD: s.owedTWD,
+      netTWD: s.netTWD,
+    }))
+
+  return (
+    <main className="max-w-lg mx-auto px-5 py-7">
+      <div className="flex items-center gap-2.5 mb-5">
+        <Link
+          href={`/trips/${id}`}
+          aria-label="返回行程"
+          className="text-ink-3 hover:text-ink-2 transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <h1 className="text-base font-bold text-ink">結算</h1>
+        <span className="text-xs text-ink-4 ml-auto truncate">{trip.name}</span>
       </div>
 
       {expenseRows.length === 0 ? (
-        <p className="text-center text-gray-400 py-8">尚無費用紀錄</p>
+        <p className="text-center text-sm text-ink-4 py-10">尚無費用紀錄</p>
       ) : (
-        <div className="flex flex-col gap-8">
-          <section className="bg-white border border-gray-200 rounded-2xl p-5 dark:bg-gray-900 dark:border-gray-800 anim-rise" style={{ animationDelay: '100ms' }}>
-            <StepHeading no="01" title="誰墊了多少" desc="每位成員實際付出的錢,對比依分攤規則應負擔的金額" />
-            <PaidShareChart rows={paidRows} />
+        <div className="flex flex-col gap-6">
+          {/* 重點先講:你的淨額 */}
+          <section className="bg-white rounded-2xl shadow-card p-5 flex flex-col items-center gap-1 anim-rise">
+            <span className="text-[12.5px] text-ink-3">{heroTitle}</span>
+            <span className={`text-[32px] font-bold font-mono tabular-nums tracking-tight ${heroClass}`}>
+              {heroAmount}
+            </span>
+            <span className="text-xs text-ink-4">{heroSub}</span>
           </section>
 
-          <section className="bg-white border border-gray-200 rounded-2xl p-5 dark:bg-gray-900 dark:border-gray-800 anim-rise" style={{ animationDelay: '200ms' }}>
-            <StepHeading no="02" title="多退少補" desc="墊付減去應分擔後的淨額:正值該收錢、負值該付錢" />
-            <NetChart rows={netRows} />
-          </section>
+          {/* 建議轉帳:流向圖 + 清單 */}
+          <section className="flex flex-col gap-2.5 anim-rise" style={{ animationDelay: '100ms' }}>
+            <h2 className="text-[13px] font-semibold text-ink-2 px-0.5">
+              建議轉帳 <span className="font-normal text-ink-4">· 最少 {transfers.length} 筆結清</span>
+            </h2>
 
-          <section className="bg-white border border-gray-200 rounded-2xl p-5 dark:bg-gray-900 dark:border-gray-800 anim-rise" style={{ animationDelay: '300ms' }}>
-            <StepHeading no="03" title="最少轉帳" desc={`把所有欠款合併為最少筆數的轉帳(共 ${transfers.length} 筆)`} />
             {transfers.length === 0 ? (
-              <p className="text-center text-gray-400 py-6">🎉 已全部結清</p>
+              <p className="text-center text-sm text-ink-4 py-6">已全部結清</p>
             ) : (
               <>
-                <TransferFlow debtors={debtors} creditors={creditors} transfers={flowTransfers} />
-                <div className="flex flex-col gap-2 mt-5">
-                  {flowTransfers.map((t, i) => (
-                    <div
-                      key={i}
-                      className="flex justify-between items-center bg-gray-50 rounded-xl px-4 py-3 dark:bg-gray-950 anim-rise"
-                      style={{ animationDelay: `${400 + i * 80}ms` }}
-                    >
-                      <div className="text-sm flex items-center gap-2">
-                        <span className="font-medium text-rose-600 dark:text-rose-400">{t.fromName}</span>
-                        <span className="text-gray-300 dark:text-gray-600">⟶</span>
-                        <span className="font-medium text-emerald-700 dark:text-emerald-400">{t.toName}</span>
+                <TransferFlow
+                  transfers={flowTransfers}
+                  currentUserId={meId}
+                  memberCount={profileMap.size}
+                />
+
+                <div className="bg-white rounded-2xl shadow-card divide-y divide-line">
+                  {flowTransfers.map((t, i) => {
+                    const mine = t.from === meId || t.to === meId
+                    return (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-2.5 px-4 py-3 ${mine ? '' : 'opacity-55'}`}
+                      >
+                        <span
+                          className="h-[26px] w-[26px] rounded-full text-[11px] font-semibold flex items-center justify-center shrink-0 select-none"
+                          style={{ background: avatarBg(t.from), color: avatarFg(t.from) }}
+                          aria-hidden="true"
+                        >
+                          {avatarChar(t.fromName)}
+                        </span>
+                        <span className="text-[13.5px] text-ink-2">
+                          {t.from === meId ? '你' : t.fromName}
+                          <span className="text-ink-4/70 mx-1.5" aria-hidden="true">→</span>
+                          <strong className="font-semibold text-ink">{t.to === meId ? '你' : t.toName}</strong>
+                        </span>
+                        <span className={`ml-auto text-[15px] font-semibold font-mono tabular-nums ${
+                          t.to === meId ? 'text-gain' : t.from === meId ? 'text-owe' : 'text-ink-2'
+                        }`}>
+                          {twd(t.amountTWD)}
+                        </span>
                       </div>
-                      <div className="font-mono tabular-nums font-semibold text-gray-900 dark:text-gray-100">
-                        NT${t.amountTWD.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
+                <p className="text-[11.5px] text-ink-4 px-0.5">與你無關的轉帳會淡化顯示</p>
               </>
             )}
+          </section>
+
+          {/* 計算過程:預設收合 */}
+          <section className="anim-rise" style={{ animationDelay: '200ms' }}>
+            <CalcDisclosure>
+              <PaidVsShareChart rows={chartRows} />
+              <div className="h-px bg-line my-3" />
+              <p className="text-[11.5px] text-ink-4">
+                行程總費用 {twd(totalTWD)} · {profileMap.size} 位成員 · 1 JPY = {trip.exchange_rate} TWD
+              </p>
+            </CalcDisclosure>
           </section>
         </div>
       )}

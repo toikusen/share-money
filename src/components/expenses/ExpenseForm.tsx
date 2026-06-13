@@ -32,6 +32,10 @@ function toDateTimeLocalValue(value?: string) {
   return localDate.toISOString().slice(0, 16)
 }
 
+// 填色輸入框(去邊框):Direction A 表單樣式
+const inputClass =
+  'w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-accent/35'
+
 export function ExpenseForm({ heading, submitLabel, pendingLabel, members, currentUserId, initial, onSubmit, onClose }: Props) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -112,47 +116,56 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
   const splitsInvalid = splitMode === 'custom' && numAmount > 0 && hybrid != null && !hybrid.valid
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-ink/40 flex items-end sm:items-center justify-center z-50 sm:p-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white text-gray-900 rounded-2xl w-full max-w-md p-6 flex flex-col gap-4 max-h-[90vh] overflow-y-auto dark:bg-gray-950 dark:text-gray-100 dark:border dark:border-gray-800"
+        className="bg-white text-ink rounded-t-2xl sm:rounded-2xl w-full max-w-md p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto"
       >
-        <h2 className="font-bold text-lg">{heading}</h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-bold text-[17px]">{heading}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[13px] text-ink-4 hover:text-ink-2 p-1 transition-colors"
+          >
+            取消
+          </button>
+        </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">費用名稱</label>
+          <label className="block text-xs font-medium text-ink-3 mb-1.5">費用名稱</label>
           <input
             value={title} onChange={e => setTitle(e.target.value)} required
             placeholder="拉麵午餐"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">付款時間</label>
+          <label className="block text-xs font-medium text-ink-3 mb-1.5">付款時間</label>
           <input
             value={paidAt}
             onChange={e => setPaidAt(e.target.value)}
             type="datetime-local"
             required
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            className={inputClass}
           />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2.5">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">金額</label>
+            <label className="block text-xs font-medium text-ink-3 mb-1.5">金額</label>
             <input
               value={amount} onChange={e => setAmount(e.target.value)}
               type="number" min="0" step={currency === 'JPY' ? '1' : '0.01'} required
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500"
+              className={`${inputClass} font-mono tabular-nums`}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">幣別</label>
+            <label className="block text-xs font-medium text-ink-3 mb-1.5">幣別</label>
             <select
               value={currency} onChange={e => setCurrency(e.target.value as Currency)}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className="bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
             >
               <option value="JPY">JPY</option>
               <option value="TWD">TWD</option>
@@ -161,10 +174,10 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">由誰付款</label>
+          <label className="block text-xs font-medium text-ink-3 mb-1.5">由誰付款</label>
           <select
             value={paidBy} onChange={e => setPaidBy(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+            className={inputClass}
           >
             {members.map(m => (
               <option key={m.id} value={m.id}>{m.display_name}{m.id === currentUserId ? '（我）' : ''}</option>
@@ -173,15 +186,16 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
         </div>
 
         <div>
-          <div className="flex gap-2 mb-3">
+          {/* 分帳模式:segmented control */}
+          <div className="flex bg-fill rounded-[10px] p-[3px] gap-0.5 mb-3">
             {(['equal', 'custom'] as const).map(mode => (
               <button
                 key={mode} type="button"
                 onClick={() => setSplitMode(mode)}
-                className={`flex-1 py-1.5 rounded-lg text-sm font-medium border transition ${
+                className={`flex-1 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
                   splitMode === mode
-                    ? 'bg-indigo-50 border-indigo-400 text-indigo-700 dark:bg-indigo-500/20 dark:border-indigo-400 dark:text-indigo-200'
-                    : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'
+                    ? 'bg-white text-ink shadow-card'
+                    : 'text-ink-3 hover:text-ink-2'
                 }`}
               >
                 {mode === 'equal' ? '均攤' : '自訂金額'}
@@ -190,12 +204,12 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
           </div>
 
           {splitMode === 'custom' && (
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            <p className="text-[11.5px] text-ink-4 mb-2">
               輸入金額＝自訂，留白＝平分剩餘金額
             </p>
           )}
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             {members.map(m => {
               const checked = selectedIds.includes(m.id)
               const selectedMembers = members.filter(x => selectedIds.includes(x.id))
@@ -209,8 +223,8 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
               const isCustom = rawCustom != null && rawCustom !== ''
               const autoShare = hybrid?.splits.find(s => s.user_id === m.id)?.amount
               return (
-                <div key={m.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 dark:bg-gray-900">
-                  <label className="flex items-center gap-2 text-sm text-gray-800 cursor-pointer dark:text-gray-100">
+                <div key={m.id} className="flex items-center justify-between gap-2.5 bg-[#f9f9fa] rounded-[10px] px-3 py-2">
+                  <label className="flex items-center gap-2.5 text-[13.5px] text-ink cursor-pointer">
                     <input
                       type="checkbox"
                       checked={checked}
@@ -219,29 +233,24 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
                           e.target.checked ? [...prev, m.id] : prev.filter(id => id !== m.id)
                         )
                       }}
-                      className="rounded"
+                      className="size-4 rounded accent-accent cursor-pointer"
                     />
                     {m.display_name}{m.id === currentUserId ? '（我）' : ''}
                   </label>
                   {splitMode === 'equal' ? (
-                    <span className="text-sm font-medium text-indigo-600 dark:text-indigo-300">
+                    <span className={`text-[13.5px] font-semibold font-mono tabular-nums ${checked && numAmount > 0 ? 'text-ink' : 'text-ink-4/60'}`}>
                       {checked && numAmount > 0 && equalAmt != null
                         ? formatAmount(equalAmt, currency)
                         : '—'}
                     </span>
                   ) : (
                     <div className="flex items-center gap-1.5">
-                      {checked && !isCustom && (
-                        <span className="text-[10px] font-medium text-indigo-500 bg-indigo-50 rounded-full px-1.5 py-0.5 dark:bg-indigo-500/15 dark:text-indigo-300">
-                          平分
-                        </span>
-                      )}
                       {checked && isCustom && (
                         <button
                           type="button"
                           aria-label={`清除 ${m.display_name} 的自訂金額`}
                           onClick={() => setCustomAmounts(prev => ({ ...prev, [m.id]: '' }))}
-                          className="text-gray-400 hover:text-gray-600 text-sm leading-none dark:hover:text-gray-200"
+                          className="text-ink-4 hover:text-ink-2 text-sm leading-none transition-colors"
                         >
                           ×
                         </button>
@@ -252,10 +261,10 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
                         onChange={e => setCustomAmounts(prev => ({ ...prev, [m.id]: e.target.value }))}
                         disabled={!checked}
                         placeholder={checked && autoShare != null && numAmount > 0 ? String(autoShare) : '0'}
-                        className={`w-24 text-right rounded px-2 py-1 text-sm bg-white text-gray-900 placeholder:text-gray-400 disabled:opacity-40 focus:outline-none focus:ring-1 focus:ring-indigo-300 transition-colors dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500 ${
+                        className={`w-24 text-right rounded-lg px-2 py-1.5 text-sm font-mono tabular-nums bg-white text-ink placeholder:text-ink-4/70 disabled:opacity-40 focus:outline-none focus:ring-1 focus:ring-accent/50 transition-colors ${
                           isCustom
-                            ? 'border border-indigo-400 dark:border-indigo-500'
-                            : 'border border-dashed border-gray-300 dark:border-gray-700'
+                            ? 'border border-accent'
+                            : 'border border-dashed border-edge'
                         }`}
                       />
                     </div>
@@ -267,51 +276,43 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
 
           {splitMode === 'custom' && numAmount > 0 && hybrid && (
             <div className="mt-3">
-              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden flex dark:bg-gray-800">
+              <div className="h-[5px] rounded-full bg-line overflow-hidden flex">
                 {hybrid.valid ? (
                   <>
                     <div
-                      className="bg-indigo-600 transition-all duration-300 dark:bg-indigo-500"
+                      className="bg-accent transition-all duration-300"
                       style={{ width: `${Math.min((hybrid.customSum / numAmount) * 100, 100)}%` }}
                     />
                     <div
-                      className="bg-indigo-300 transition-all duration-300 dark:bg-indigo-400/40"
+                      className="bg-accent-soft/60 transition-all duration-300"
                       style={{ width: `${Math.max((hybrid.remaining / numAmount) * 100, 0)}%` }}
                     />
                   </>
                 ) : (
-                  <div className="bg-red-500 w-full transition-all duration-300" />
+                  <div className="bg-owe w-full transition-all duration-300" />
                 )}
               </div>
-              <p className={`text-xs mt-1.5 ${hybrid.valid ? 'text-gray-500 dark:text-gray-400' : 'text-red-500'}`}>
+              <p className={`text-[11.5px] mt-1.5 ${hybrid.valid ? 'text-ink-3' : 'text-owe'}`}>
                 {!hybrid.valid && hybrid.autoCount > 0 &&
-                  `⚠️ 自訂金額超出總額 ${formatAmount(Math.abs(hybrid.remaining), currency)}`}
+                  `自訂金額超出總額 ${formatAmount(Math.abs(hybrid.remaining), currency)}`}
                 {!hybrid.valid && hybrid.autoCount === 0 &&
-                  `⚠️ 總計 ${formatAmount(hybrid.customSum, currency)}，與總額差 ${formatAmount(Math.abs(numAmount - hybrid.customSum), currency)}`}
+                  `總計 ${formatAmount(hybrid.customSum, currency)}，與總額差 ${formatAmount(Math.abs(numAmount - hybrid.customSum), currency)}`}
                 {hybrid.valid && hybrid.autoCount > 0 &&
                   `已自訂 ${formatAmount(hybrid.customSum, currency)} · 剩餘 ${formatAmount(hybrid.remaining, currency)} 由 ${hybrid.autoCount} 人平分`}
-                {hybrid.valid && hybrid.autoCount === 0 && '✅ 金額總和正確'}
+                {hybrid.valid && hybrid.autoCount === 0 && '金額總和正確'}
               </p>
             </div>
           )}
         </div>
 
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-owe">{error}</p>}
 
-        <div className="flex gap-2">
-          <button
-            type="button" onClick={onClose}
-            className="flex-1 border border-gray-300 rounded-lg py-2 text-sm text-gray-700 hover:bg-gray-50 transition dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900"
-          >
-            取消
-          </button>
-          <button
-            type="submit" disabled={isPending || splitsInvalid}
-            className="flex-1 bg-indigo-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition"
-          >
-            {isPending ? pendingLabel : submitLabel}
-          </button>
-        </div>
+        <button
+          type="submit" disabled={isPending || splitsInvalid}
+          className="w-full bg-accent text-white rounded-xl py-3 text-sm font-semibold hover:bg-accent-deep disabled:opacity-50 transition-colors"
+        >
+          {isPending ? pendingLabel : submitLabel}
+        </button>
       </form>
     </div>
   )

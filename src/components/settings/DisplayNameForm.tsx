@@ -33,18 +33,18 @@ export function DisplayNameForm({ initialName }: { initialName: string }) {
           required
           maxLength={DISPLAY_NAME_MAX_LENGTH}
           defaultValue={initialName}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          className="w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
         />
-        <p className="text-xs text-gray-400 mt-1">其他成員會在行程與分帳中看到這個名稱</p>
+        <p className="text-xs text-ink-4 mt-1.5">其他成員會在行程與分帳中看到這個名稱</p>
       </div>
 
-      {error && <p className="text-sm text-red-500">{error}</p>}
-      {saved && <p className="text-sm text-green-600">已更新</p>}
+      {error && <p className="text-sm text-owe">{error}</p>}
+      {saved && <p className="text-sm text-gain">已更新</p>}
 
       <button
         type="submit"
         disabled={isPending}
-        className="self-start bg-indigo-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-indigo-500 transition-colors disabled:opacity-50"
+        className="self-start bg-accent text-white text-sm font-semibold px-4 py-2 rounded-[10px] hover:bg-accent-deep transition-colors disabled:opacity-50"
       >
         {isPending ? '儲存中…' : '儲存'}
       </button>

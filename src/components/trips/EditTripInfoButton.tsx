@@ -12,7 +12,7 @@ type Props = {
 }
 
 const inputClass =
-  'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100'
+  'w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35'
 
 export function EditTripInfoButton({ tripId, initialName, initialStartDate, initialEndDate }: Props) {
   const [editing, setEditing] = useState(false)
@@ -39,12 +39,12 @@ export function EditTripInfoButton({ tripId, initialName, initialStartDate, init
     return (
       <div>
         <div className="flex items-start gap-2">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 leading-snug">{name}</h1>
+          <h1 className="text-[23px] font-bold tracking-tight text-ink leading-snug">{name}</h1>
           <button
             type="button"
             onClick={() => setEditing(true)}
             aria-label="編輯行程資訊"
-            className="mt-1 p-1.5 rounded-lg text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 dark:text-gray-600 dark:hover:text-indigo-400 dark:hover:bg-indigo-950/30 transition-colors"
+            className="mt-1 p-1.5 rounded-lg text-ink-4/70 hover:text-accent hover:bg-accent/5 transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -53,16 +53,16 @@ export function EditTripInfoButton({ tripId, initialName, initialStartDate, init
           </button>
         </div>
         {dateRange && (
-          <p className="text-sm font-medium text-indigo-500 dark:text-indigo-400 mt-0.5">{dateRange}</p>
+          <p className="text-[12.5px] text-ink-3 mt-0.5">{dateRange}</p>
         )}
       </div>
     )
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-3">
+    <form action={handleSubmit} className="flex flex-col gap-3 w-full">
       <div>
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">行程名稱</label>
+        <label className="block text-xs font-medium text-ink-3 mb-1.5">行程名稱</label>
         <input
           name="name"
           type="text"
@@ -72,7 +72,7 @@ export function EditTripInfoButton({ tripId, initialName, initialStartDate, init
         />
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">日期區間<span className="text-gray-400 font-normal ml-1">（選填）</span></label>
+        <label className="block text-xs font-medium text-ink-3 mb-1.5">日期區間<span className="text-ink-4 font-normal ml-1">（選填）</span></label>
         <div className="flex items-center gap-2">
           <input
             name="start_date"
@@ -80,7 +80,7 @@ export function EditTripInfoButton({ tripId, initialName, initialStartDate, init
             defaultValue={startDate}
             className={`${inputClass} flex-1`}
           />
-          <span className="text-gray-400 text-sm shrink-0">–</span>
+          <span className="text-ink-4 text-sm shrink-0">–</span>
           <input
             name="end_date"
             type="date"
@@ -93,14 +93,14 @@ export function EditTripInfoButton({ tripId, initialName, initialStartDate, init
         <button
           type="submit"
           disabled={isPending}
-          className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2 rounded-lg transition-colors disabled:opacity-60"
+          className="flex-1 bg-accent hover:bg-accent-deep text-white text-sm font-semibold py-2 rounded-[10px] transition-colors disabled:opacity-60"
         >
           {isPending ? '儲存中...' : '儲存'}
         </button>
         <button
           type="button"
           onClick={() => setEditing(false)}
-          className="flex-1 border border-gray-200 text-gray-600 text-sm font-medium py-2 rounded-lg hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-white/5 transition-colors"
+          className="flex-1 bg-fill text-ink-2 text-sm font-medium py-2 rounded-[10px] hover:bg-line transition-colors"
         >
           取消
         </button>

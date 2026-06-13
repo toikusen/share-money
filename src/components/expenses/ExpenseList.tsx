@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { EditExpenseButton } from '@/components/expenses/EditExpenseButton'
 import { deleteExpenseAction } from '@/lib/actions/expenses'
-import { formatAmount } from '@/lib/utils/currency'
+import { convertToTWD, formatAmount } from '@/lib/utils/currency'
 import { formatExpenseDate, formatExpenseDateTime, formatExpenseTime, groupByPaidDate } from '@/lib/utils/datetime'
 import type { Currency } from '@/types/database'
 
@@ -26,12 +26,13 @@ type Props = {
   expenses: ExpenseDisplayRow[]
   members: MemberProfile[]
   currentUserId: string
+  exchangeRate: number
 }
 
 // Device time zone never changes within a session; nothing to subscribe to.
 const subscribeNoop = () => () => {}
 
-export function ExpenseList({ tripId, expenses, members, currentUserId }: Props) {
+export function ExpenseList({ tripId, expenses, members, currentUserId, exchangeRate }: Props) {
   // Server render falls back to Asia/Taipei (undefined); after hydration we
   // re-group and re-format in the viewer's device time zone so times match
   // what they typed.
@@ -56,31 +57,59 @@ export function ExpenseList({ tripId, expenses, members, currentUserId }: Props)
       return next
     })
 
+  // DailySpendChart 點長條 → 展開該日群組並捲過去
+  useEffect(() => {
+    function onOpenDay(event: Event) {
+      const date = (event as CustomEvent<string>).detail
+      setToggled(prev => {
+        const next = new Set(prev)
+        if (date === todayDate) next.delete(date)
+        else next.add(date)
+        return next
+      })
+      requestAnimationFrame(() => {
+        const el = document.getElementById(`day-${date}`)
+        if (el) {
+          window.scrollTo({
+            top: el.getBoundingClientRect().top + window.scrollY - 88,
+            behavior: 'smooth',
+          })
+        }
+      })
+    }
+    window.addEventListener('sm:open-day', onOpenDay)
+    return () => window.removeEventListener('sm:open-day', onOpenDay)
+  }, [todayDate])
+
+  // 當日小計:全是 JPY 顯示 ¥,混幣別退回換算後的 NT$
+  function groupSum(items: ExpenseDisplayRow[]) {
+    const allJPY = items.every(e => e.currency === 'JPY')
+    if (allJPY) {
+      const sum = items.reduce((a, e) => a + e.amount, 0)
+      return `¥${Math.round(sum).toLocaleString('zh-TW')}`
+    }
+    const sum = items.reduce((a, e) => a + convertToTWD(e.amount, e.currency, exchangeRate), 0)
+    return `≈NT$${Math.round(sum).toLocaleString('zh-TW')}`
+  }
+
   return (
     <div className="flex flex-col gap-2 mb-3">
       {expenseGroups.map(group => {
         const open = isOpen(group.date)
         return (
-        <div key={group.date} className="flex flex-col gap-2">
+        <div key={group.date} id={`day-${group.date}`} className="flex flex-col gap-2 scroll-mt-24">
+          {/* 日期群組標題:純文字列 + 當日小計 */}
           <button
             type="button"
             suppressHydrationWarning
             onClick={() => toggle(group.date)}
-            className={`flex items-center justify-between w-full mt-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-              open
-                ? 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-white/5'
-                : 'text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-white/8 hover:bg-gray-200/70 dark:hover:bg-white/12'
-            }`}
+            className="flex items-baseline justify-between w-full mt-2 px-0.5 hover:opacity-70 transition-opacity"
           >
-            <span suppressHydrationWarning>{group.date}</span>
-            <div className="flex items-center gap-1.5">
-              {!open && (
-                <span className="tabular-nums text-[10px] font-medium text-gray-400 dark:text-gray-500">
-                  {group.items.length} 筆
-                </span>
-              )}
+            <span suppressHydrationWarning className="text-xs font-semibold text-ink-3">{group.date}</span>
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] text-ink-4 font-mono tabular-nums">
+              {open ? groupSum(group.items) : `${group.items.length} 筆 · ${groupSum(group.items)}`}
               <svg
-                width="13" height="13"
+                width="12" height="12"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -92,61 +121,68 @@ export function ExpenseList({ tripId, expenses, members, currentUserId }: Props)
               >
                 <polyline points="6 9 12 15 18 9" />
               </svg>
-            </div>
+            </span>
           </button>
-          {open && group.items.map(expense => (
-            <div key={expense.id} className="bg-white border border-gray-100 rounded-xl p-3.5 shadow-sm dark:bg-gray-900 dark:border-gray-800">
-              <div className="flex justify-between items-center gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium text-sm text-gray-900 break-words dark:text-gray-100">{expense.title}</div>
-                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                    <time suppressHydrationWarning dateTime={expense.paid_at} title={formatExpenseDateTime(expense.paid_at, timeZone)}>
-                      {formatExpenseTime(expense.paid_at, timeZone)}
-                    </time>
-                    <span aria-hidden="true">·</span>
-                    <span className="font-medium text-gray-600 dark:text-gray-300">{formatAmount(expense.amount, expense.currency)}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{expense.payer?.display_name} 付</span>
+
+          {/* 同一天的費用進同一張卡,髮絲線分隔 */}
+          {open && (
+            <div className="bg-white rounded-2xl shadow-card divide-y divide-line">
+              {group.items.map(expense => (
+                <div key={expense.id} className="flex justify-between items-center gap-3 px-4 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-[14.5px] text-ink break-words">{expense.title}</div>
+                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-4 mt-0.5">
+                      <time suppressHydrationWarning dateTime={expense.paid_at} title={formatExpenseDateTime(expense.paid_at, timeZone)}>
+                        {formatExpenseTime(expense.paid_at, timeZone)}
+                      </time>
+                      <span aria-hidden="true">·</span>
+                      <span>{expense.payer?.display_name} 付</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="text-[15px] font-semibold font-mono tabular-nums text-ink whitespace-nowrap">
+                      {formatAmount(expense.amount, expense.currency)}
+                    </span>
+                    {expense.created_by === currentUserId && (
+                      <div className="flex items-center">
+                        <EditExpenseButton
+                          tripId={tripId}
+                          members={members}
+                          currentUserId={currentUserId}
+                          expense={{
+                            id: expense.id,
+                            title: expense.title,
+                            amount: expense.amount,
+                            currency: expense.currency,
+                            paid_by: expense.paid_by,
+                            paid_at: expense.paid_at,
+                            splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
+                          }}
+                        />
+                        <form
+                          action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}
+                          className="flex items-center"
+                        >
+                          <button
+                            type="submit"
+                            aria-label="刪除費用"
+                            className="p-1.5 rounded-lg text-ink-4/70 hover:text-owe hover:bg-owe/5 transition-colors"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                              <path d="M10 11v6M14 11v6" />
+                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                            </svg>
+                          </button>
+                        </form>
+                      </div>
+                    )}
                   </div>
                 </div>
-                {expense.created_by === currentUserId && (
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <EditExpenseButton
-                      tripId={tripId}
-                      members={members}
-                      currentUserId={currentUserId}
-                      expense={{
-                        id: expense.id,
-                        title: expense.title,
-                        amount: expense.amount,
-                        currency: expense.currency,
-                        paid_by: expense.paid_by,
-                        paid_at: expense.paid_at,
-                        splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
-                      }}
-                    />
-                    <form
-                      action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}
-                      className="flex items-center"
-                    >
-                      <button
-                        type="submit"
-                        aria-label="刪除費用"
-                        className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 hover:bg-red-50 dark:text-gray-600 dark:hover:text-red-400 dark:hover:bg-red-950/30 transition-colors"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6M14 11v6" />
-                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                        </svg>
-                      </button>
-                    </form>
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
         )
       })}

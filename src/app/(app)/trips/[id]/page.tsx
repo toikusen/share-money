@@ -2,11 +2,14 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { AddExpenseModal } from '@/components/expenses/AddExpenseModal'
 import { ExpenseList, type ExpenseDisplayRow } from '@/components/expenses/ExpenseList'
+import { DailySpendChart } from '@/components/expenses/DailySpendChart'
 import { InviteCard } from '@/components/trips/InviteCard'
 import { deleteTripAction, updateExchangeRateAction } from '@/lib/actions/trips'
 import { getRequestSiteUrl } from '@/lib/site-url'
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton'
 import { EditTripInfoButton } from '@/components/trips/EditTripInfoButton'
+import { calculateMemberStats } from '@/lib/utils/balance'
+import { avatarBg, avatarFg, avatarChar } from '@/lib/utils/avatar'
 import Link from 'next/link'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
@@ -51,6 +54,18 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const inviteUrl = `${await getRequestSiteUrl()}/join/${trip.invite_token}`
   const canDeleteTrip = trip.created_by === user!.id
 
+  // 你的目前淨額 — 結算入口直接預告答案
+  const statRows = expenseRows.map(e => ({ id: e.id, amount: e.amount, currency: e.currency, paid_by: e.paid_by }))
+  const splitRows = expenseRows.flatMap(e =>
+    e.expense_splits.map(s => ({ expense_id: e.id, user_id: s.user_id, amount: s.amount }))
+  )
+  const stats = calculateMemberStats(statRows, splitRows, trip.exchange_rate)
+  const myNet = stats.find(s => s.userId === user!.id)?.netTWD ?? 0
+  const settled = Math.abs(myNet) < 0.005
+  const netWord = settled ? '已結清' : myNet > 0 ? '你應收' : '你應付'
+  const netClass = settled ? 'text-ink-3' : myNet > 0 ? 'text-gain' : 'text-owe'
+  const netAmount = settled ? '—' : `NT$${Math.round(Math.abs(myNet)).toLocaleString('zh-TW')}`
+
   async function updateRate(formData: FormData) {
     'use server'
     const rate = parseFloat(formData.get('rate') as string)
@@ -58,17 +73,17 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   }
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-8">
+    <main className="max-w-lg mx-auto px-5 py-7">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-5">
         <Link
           href="/trips"
-          className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mb-4 transition-colors"
+          className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink-2 mb-4 transition-colors"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          所有行程
+          行程
         </Link>
 
         <div className="flex items-start justify-between gap-2">
@@ -81,7 +96,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             />
           ) : (
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 leading-snug">{trip.name}</h1>
+              <h1 className="text-[23px] font-bold tracking-tight text-ink leading-snug">{trip.name}</h1>
             </div>
           )}
           {canDeleteTrip && (
@@ -92,72 +107,95 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             />
           )}
         </div>
-
-        <div className="mt-4">
-          <Link
-            href={`/trips/${id}/balance`}
-            className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 active:scale-95 transition-all dark:bg-indigo-500 dark:hover:bg-indigo-400"
-          >
-            結算帳目
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
       </div>
 
-      {/* Exchange rate */}
-      <form action={updateRate} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 mb-6">
-        <span>1 JPY =</span>
+      {/* 結算入口:直接預告你的淨額 */}
+      <Link
+        href={`/trips/${id}/balance`}
+        className="flex items-center justify-between bg-white rounded-2xl shadow-card hover:shadow-card-hover transition-shadow px-4 py-3.5"
+      >
+        <div className="flex flex-col gap-0.5">
+          <span className="text-[11.5px] text-ink-3">目前結算 · {netWord}</span>
+          <span className={`text-xl font-bold font-mono tabular-nums ${netClass}`}>{netAmount}</span>
+        </div>
+        <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-accent">
+          結算帳目
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </span>
+      </Link>
+
+      {/* 每日支出(點長條跳到該日明細) */}
+      <DailySpendChart
+        expenses={expenseRows.map(e => ({ paid_at: e.paid_at, amount: e.amount, currency: e.currency }))}
+        exchangeRate={trip.exchange_rate}
+        startDate={trip.start_date}
+        endDate={trip.end_date}
+      />
+
+      {/* 成員 + 邀請 */}
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center" aria-label={`成員 ${members.length} 人`}>
+          {members.map(m => (
+            <span
+              key={m.id}
+              title={m.display_name}
+              className="h-7 w-7 rounded-full text-xs font-semibold flex items-center justify-center ring-2 ring-surface -ml-1.5 first:ml-0 select-none"
+              style={{ background: avatarBg(m.id), color: avatarFg(m.id) }}
+            >
+              {avatarChar(m.display_name)}
+            </span>
+          ))}
+        </div>
+        <InviteCard inviteUrl={inviteUrl} />
+      </div>
+
+      {/* 匯率(安靜的工具列) */}
+      <form action={updateRate} className="flex items-center gap-1.5 text-xs text-ink-3 mt-3">
+        <span>匯率 1 JPY =</span>
         <input
           name="rate"
           type="number"
           step="0.0001"
           defaultValue={trip.exchange_rate}
-          className="w-24 border border-gray-200 rounded px-2 py-0.5 text-sm text-gray-900 bg-white focus:outline-none focus:ring-1 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+          className="w-20 bg-fill border-0 rounded-md px-2 py-1 text-xs text-ink text-right font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/35"
         />
         <span>TWD</span>
-        <button type="submit" className="text-indigo-600 hover:text-indigo-700 text-xs dark:text-indigo-300 dark:hover:text-indigo-200">更新</button>
+        <button type="submit" className="ml-1 text-accent hover:text-accent-deep text-xs font-medium transition-colors">更新</button>
       </form>
 
-      {/* Members */}
-      <section className="mb-6">
-        <h2 className="text-sm font-semibold text-gray-600 dark:text-gray-300 mb-2">成員（{members.length} 人）</h2>
-        <div className="flex flex-wrap gap-2">
-          {members.map((m) => (
-            <span key={m.id} className="bg-gray-100 text-gray-800 rounded-full px-3 py-1 text-sm dark:bg-gray-800 dark:text-gray-100">
-              {m.display_name}
-            </span>
-          ))}
-        </div>
-        <InviteCard inviteUrl={inviteUrl} />
-      </section>
-
       {/* Expenses */}
-      <section className="mt-8">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">費用明細</h2>
+      <section className="mt-7">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-[13px] font-semibold text-ink-2">
+            費用明細 <span className="font-normal text-ink-4">· {expenseRows.length} 筆</span>
+          </h2>
           <div className="flex items-center gap-2">
-            <AddExpenseModal tripId={id} members={members} currentUserId={user!.id} compact />
             <Link
               href={`/trips/${id}/activity`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:border-indigo-300 hover:text-indigo-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:hover:border-indigo-500 dark:hover:text-indigo-300"
+              aria-label="編輯紀錄"
+              className="p-1.5 rounded-lg text-ink-4 hover:text-ink-2 hover:bg-fill transition-colors"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8" />
                 <path d="M3 3v5h5" />
                 <path d="M12 7v5l3 2" />
               </svg>
-              編輯紀錄
             </Link>
+            <AddExpenseModal tripId={id} members={members} currentUserId={user!.id} compact />
           </div>
         </div>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-          {expenseRows.length > 0
-            ? `共 ${expenseRows.length} 筆，依付款日期由新到舊排列`
-            : '新增費用後，明細會依付款日期分組顯示'}
-        </p>
-        <ExpenseList tripId={id} expenses={expenseRows} members={members} currentUserId={user!.id} />
+        {expenseRows.length === 0 && (
+          <p className="text-center text-sm text-ink-4 py-10">還沒有費用，點「記一筆」開始</p>
+        )}
+        <ExpenseList
+          tripId={id}
+          expenses={expenseRows}
+          members={members}
+          currentUserId={user!.id}
+          exchangeRate={trip.exchange_rate}
+        />
       </section>
     </main>
   )

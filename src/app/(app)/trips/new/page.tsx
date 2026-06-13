@@ -1,6 +1,9 @@
 import { createTripAction, fetchExchangeRate } from '@/lib/actions/trips'
 import Link from 'next/link'
 
+const inputClass =
+  'w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-accent/35'
+
 export default async function NewTripPage() {
   const rate = await fetchExchangeRate()
 
@@ -10,43 +13,52 @@ export default async function NewTripPage() {
   }
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/trips" className="text-gray-400 hover:text-gray-600">←</Link>
-        <h1 className="text-xl font-bold">新增行程</h1>
+    <main className="max-w-lg mx-auto px-5 py-7">
+      <div className="flex items-center gap-2.5 mb-6">
+        <Link
+          href="/trips"
+          aria-label="返回行程"
+          className="text-ink-3 hover:text-ink-2 transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <h1 className="text-base font-bold text-ink">新增行程</h1>
       </div>
 
-      <form action={handleCreate} className="bg-white rounded-xl border border-gray-200 p-6 flex flex-col gap-4">
+      <form action={handleCreate} className="bg-white rounded-2xl shadow-card p-5 flex flex-col gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">行程名稱</label>
+          <label className="block text-xs font-medium text-ink-3 mb-1.5">行程名稱</label>
           <input
             name="name"
             type="text"
             required
             placeholder="東京五日遊"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            className={inputClass}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">日期區間<span className="text-gray-400 font-normal ml-1">（選填）</span></label>
+          <label className="block text-xs font-medium text-ink-3 mb-1.5">日期區間<span className="text-ink-4 font-normal ml-1">（選填）</span></label>
           <div className="flex items-center gap-2">
             <input
               name="start_date"
               type="date"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className={`${inputClass} flex-1`}
             />
-            <span className="text-gray-400 text-sm shrink-0">–</span>
+            <span className="text-ink-4 text-sm shrink-0">–</span>
             <input
               name="end_date"
               type="date"
-              className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+              className={`${inputClass} flex-1`}
             />
           </div>
+          <p className="text-xs text-ink-4 mt-1.5">填了日期，行程頁會多一張「每日支出」圖</p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-xs font-medium text-ink-3 mb-1.5">
             匯率（1 JPY = ? TWD）
           </label>
           <input
@@ -57,18 +69,18 @@ export default async function NewTripPage() {
             required
             defaultValue={rate ?? ''}
             placeholder={rate ? String(rate) : '請手動輸入（目前無法取得即時匯率）'}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            className={`${inputClass} font-mono tabular-nums`}
           />
           {rate ? (
-            <p className="text-xs text-gray-400 mt-1">已自動填入即時匯率，可手動修改</p>
+            <p className="text-xs text-ink-4 mt-1.5">已自動填入即時匯率，可手動修改</p>
           ) : (
-            <p className="text-xs text-red-400 mt-1">無法取得即時匯率，請手動輸入</p>
+            <p className="text-xs text-owe mt-1.5">無法取得即時匯率，請手動輸入</p>
           )}
         </div>
 
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition"
+          className="w-full bg-accent text-white py-3 rounded-xl text-sm font-semibold hover:bg-accent-deep transition-colors"
         >
           建立行程
         </button>

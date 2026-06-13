@@ -24,30 +24,38 @@ export default async function SettingsPage() {
   const initial = email.charAt(0).toUpperCase()
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/trips" className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">←</Link>
-        <h1 className="text-xl font-bold">設定</h1>
+    <main className="max-w-lg mx-auto px-5 py-7">
+      <div className="flex items-center gap-2.5 mb-6">
+        <Link
+          href="/trips"
+          aria-label="返回行程"
+          className="text-ink-3 hover:text-ink-2 transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <h1 className="text-base font-bold text-ink">設定</h1>
       </div>
 
       <div className="flex flex-col gap-5">
         {/* Display name */}
         <section>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1">顯示名稱</p>
-          <div className="bg-white rounded-xl border border-gray-200 p-5 dark:bg-gray-900 dark:border-gray-800">
+          <p className="text-xs font-semibold text-ink-3 mb-2 px-1">顯示名稱</p>
+          <div className="bg-white rounded-2xl shadow-card p-5">
             <DisplayNameForm initialName={profile.display_name} />
           </div>
         </section>
 
         {/* Account info */}
         <section>
-          <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-1">登入帳號</p>
-          <div className="bg-white rounded-xl border border-gray-200 p-4 dark:bg-gray-900 dark:border-gray-800">
+          <p className="text-xs font-semibold text-ink-3 mb-2 px-1">登入帳號</p>
+          <div className="bg-white rounded-2xl shadow-card p-4">
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-9 w-9 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-sm font-semibold text-indigo-600 dark:text-indigo-400 shrink-0">
+              <div className="h-9 w-9 rounded-full bg-fill flex items-center justify-center text-sm font-semibold text-ink-2 shrink-0">
                 {initial}
               </div>
-              <span className="text-sm text-gray-800 dark:text-gray-200 truncate">{email}</span>
+              <span className="text-sm text-ink truncate">{email}</span>
             </div>
             <SignOutButton />
           </div>

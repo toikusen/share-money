@@ -11,12 +11,13 @@ type ActivityRow = {
   actor: { display_name: string } | null
 } & ActivityEvent
 
+// 紅綠保留金錢語意,但事件類型仍可分色:新增=gain、編輯=accent、刪除=owe
 function dotClass(action: ActivityRow['action']): string {
   switch (action) {
-    case 'expense.created': return 'bg-emerald-500'
-    case 'expense.updated': return 'bg-indigo-500'
-    case 'expense.deleted': return 'bg-rose-500'
-    default: return 'bg-gray-300 dark:bg-gray-600'
+    case 'expense.created': return 'bg-gain'
+    case 'expense.updated': return 'bg-accent'
+    case 'expense.deleted': return 'bg-owe'
+    default: return 'bg-edge'
   }
 }
 
@@ -64,29 +65,37 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
   const rows = (logs ?? []) as unknown as ActivityRow[]
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-8">
-      <div className="flex items-center gap-3 mb-2">
-        <Link href={`/trips/${id}`} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">←</Link>
-        <h1 className="text-xl font-bold">編輯紀錄</h1>
+    <main className="max-w-lg mx-auto px-5 py-7">
+      <div className="flex items-center gap-2.5 mb-1">
+        <Link
+          href={`/trips/${id}`}
+          aria-label="返回行程"
+          className="text-ink-3 hover:text-ink-2 transition-colors"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </Link>
+        <h1 className="text-base font-bold text-ink">編輯紀錄</h1>
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+      <p className="text-xs text-ink-4 mb-6 ml-[26px]">
         {trip.name} · 最近 {rows.length} 筆異動
       </p>
 
       {rows.length === 0 ? (
-        <p className="text-center text-gray-400 py-8">尚無編輯紀錄</p>
+        <p className="text-center text-sm text-ink-4 py-10">尚無編輯紀錄</p>
       ) : (
-        <ol className="relative ml-1.5 flex flex-col gap-5 border-l border-gray-200 pl-5 dark:border-gray-800">
+        <ol className="relative ml-1.5 flex flex-col gap-5 border-l border-edge pl-5">
           {rows.map((row, i) => (
             <li key={row.id} className="relative anim-rise" style={{ animationDelay: `${Math.min(i * 50, 500)}ms` }}>
               <span
                 aria-hidden="true"
-                className={`absolute -left-[25px] top-1 h-2.5 w-2.5 rounded-full ring-4 ring-white dark:ring-[#0a0a0a] ${dotClass(row.action)}`}
+                className={`absolute -left-[25px] top-1 h-2.5 w-2.5 rounded-full ring-4 ring-surface ${dotClass(row.action)}`}
               />
-              <p className="text-sm text-gray-800 dark:text-gray-100">
+              <p className="text-sm text-ink">
                 {formatActivityText(row, row.actor?.display_name ?? '未知成員', nameOf)}
               </p>
-              <p className="font-mono tabular-nums text-[11px] text-gray-400 dark:text-gray-500 mt-1">
+              <p className="font-mono tabular-nums text-[11px] text-ink-4 mt-1">
                 {formatExpenseDateTime(row.created_at)}
               </p>
             </li>

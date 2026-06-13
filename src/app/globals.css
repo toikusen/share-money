@@ -1,34 +1,50 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ── Direction A「層次重建」design tokens ─────────────────
+   規則:
+   1. 每頁只有一個視覺重心
+   2. 紅綠只用於金錢語意(gain=該收、owe=該付),強調色只給主要動作
+   3. 卡片用陰影不用邊框;同層級資訊進同一張卡,卡與卡之間用留白
+   4. 金額一律 font-mono tabular-nums 右對齊
+─────────────────────────────────────────────────────── */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@theme {
+  /* 中性色階(帶一點點冷灰) */
+  --color-surface: #fafafa; /* 頁面背景 */
+  --color-ink: #1c1d21;     /* 主文字 */
+  --color-ink-2: #55585e;   /* 次要文字 */
+  --color-ink-3: #8a8d93;   /* 三級文字/標籤 */
+  --color-ink-4: #a9abb1;   /* meta/弱化 */
+  --color-line: #f0f0f2;    /* 髮絲分隔線 */
+  --color-edge: #e3e4e8;    /* 較深的線(軸線、虛線框) */
+  --color-fill: #f4f4f5;    /* 表單輸入填色 */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* 強調色(取代 indigo-600,只用於主要動作) */
+  --color-accent: oklch(0.52 0.11 255);
+  --color-accent-deep: oklch(0.47 0.11 255);
+  --color-accent-soft: oklch(0.72 0.07 255); /* 圖表線條/長條 */
+
+  /* 金錢語意 */
+  --color-gain: oklch(0.52 0.12 155); /* 該收 */
+  --color-owe: oklch(0.56 0.15 25);   /* 該付 */
+
+  /* 卡片陰影(取代 border) */
+  --shadow-card: 0 1px 2px rgba(28, 29, 33, 0.05);
+  --shadow-card-hover: 0 3px 12px rgba(28, 29, 33, 0.1);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-ink);
 }
 
-/* ── Settlement report ──────────────────────────────── */
+/* ── 動畫 ──────────────────────────────────────────── */
 
 @keyframes grow-x {
   from { transform: scaleX(0); }
+}
+@keyframes grow-y {
+  from { transform: scaleY(0); }
 }
 @keyframes rise {
   from { opacity: 0; transform: translateY(10px); }
@@ -36,35 +52,24 @@ body {
 @keyframes fade {
   from { opacity: 0; }
 }
+@keyframes flow-draw {
+  to { stroke-dashoffset: 0; }
+}
 
-.anim-grow-l { transform-origin: left;  animation: grow-x 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
-.anim-grow-r { transform-origin: right; animation: grow-x 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.anim-grow-l { transform-origin: left;   animation: grow-x 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.anim-grow-r { transform-origin: right;  animation: grow-x 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+.anim-grow-y { transform-origin: bottom; animation: grow-y 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 .anim-rise   { animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
 .anim-fade   { animation: fade 0.9s ease backwards; }
 
-@keyframes pop {
-  0% { transform: scale(0.9); }
-  55% { transform: scale(1.06); }
-  100% { transform: scale(1); }
+/* SVG 路徑描邊畫入(配 pathLength="1" 使用) */
+.anim-flow-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: flow-draw 0.7s ease forwards;
 }
-.anim-pop { animation: pop 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-grow-l, .anim-grow-r, .anim-rise, .anim-fade, .anim-pop { animation: none; }
-}
-
-/* Dark ticket-style hero card with a faint blueprint grid */
-.ticket-card {
-  background-color: #1e1b4b; /* indigo-950 */
-  background-image:
-    radial-gradient(ellipse 90% 70% at 80% -10%, rgba(129, 140, 248, 0.28), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 10% 110%, rgba(99, 102, 241, 0.18), transparent 65%),
-    repeating-linear-gradient(0deg, rgba(165, 180, 252, 0.05) 0 1px, transparent 1px 22px),
-    repeating-linear-gradient(90deg, rgba(165, 180, 252, 0.05) 0 1px, transparent 1px 22px);
-}
-
-/* Receipt-style perforation divider */
-.perforation {
-  border: none;
-  border-top: 2px dashed rgba(165, 180, 252, 0.3);
+  .anim-grow-l, .anim-grow-r, .anim-grow-y, .anim-rise, .anim-fade { animation: none; }
+  .anim-flow-draw { animation: none; stroke-dashoffset: 0; }
 }

@@ -20,8 +20,8 @@ export function DeleteTripButton({ action, label = '刪除', iconOnly }: DeleteT
         type="submit"
         className={
           iconOnly
-            ? 'p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30'
-            : 'text-sm font-medium text-red-500 hover:text-red-700 transition'
+            ? 'p-1.5 rounded-lg text-ink-4/70 hover:text-owe hover:bg-owe/5 transition-colors'
+            : 'text-sm font-medium text-owe hover:opacity-80 transition-opacity'
         }
         aria-label={iconOnly ? label : undefined}
       >

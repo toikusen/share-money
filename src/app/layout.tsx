@@ -16,14 +16,15 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#4F46E5',
+  // ≈ oklch(0.52 0.11 255)
+  themeColor: '#4f61c9',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-TW">
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
-        <NextTopLoader color="#ffffff" height={2} showSpinner={false} shadow={false} />
+      <body className={`${inter.className} bg-surface text-ink min-h-screen`}>
+        <NextTopLoader color="#4f61c9" height={2} showSpinner={false} shadow={false} />
         {children}
       </body>
     </html>
