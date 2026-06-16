@@ -28,7 +28,7 @@ export function EditExpenseButton({ tripId, members, currentUserId, expense }: P
       <button
         onClick={() => setOpen(true)}
         aria-label="編輯費用"
-        className="p-1.5 rounded-lg text-ink-4/70 hover:text-accent hover:bg-accent/5 transition-colors"
+        className="p-2 rounded-lg text-ink-4/70 hover:text-accent hover:bg-accent/5 transition-colors"
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

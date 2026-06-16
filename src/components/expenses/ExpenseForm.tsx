@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect, useRef } from 'react'
 import { splitEqually, isEqualSplit, splitWithRemainder, formatAmount } from '@/lib/utils/currency'
 import type { Profile, Currency, SplitInput } from '@/types/database'
 
@@ -32,7 +32,6 @@ function toDateTimeLocalValue(value?: string) {
   return localDate.toISOString().slice(0, 16)
 }
 
-// 填色輸入框(去邊框):Direction A 表單樣式
 const inputClass =
   'w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-accent/35'
 
@@ -56,6 +55,39 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>(
     initial ? Object.fromEntries(initial.splits.map(s => [s.user_id, String(s.amount)])) : {}
   )
+
+  const formRef = useRef<HTMLFormElement>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose })
+
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const form = formRef.current
+    if (!form) return
+
+    const focusable = form.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') { onCloseRef.current(); return }
+      if (e.key !== 'Tab') return
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus() }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = prev
+    }
+  }, [])
 
   function hybridResult() {
     const numAmount = parseFloat(amount) || 0
@@ -116,13 +148,21 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
   const splitsInvalid = splitMode === 'custom' && numAmount > 0 && hybrid != null && !hybrid.valid
 
   return (
-    <div className="fixed inset-0 bg-ink/40 flex items-end sm:items-center justify-center z-50 sm:p-4">
+    <div
+      className="fixed inset-0 bg-ink/40 flex items-end sm:items-center justify-center z-50 sm:p-4"
+      onClick={onClose}
+    >
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="expense-form-title"
         className="bg-white text-ink rounded-t-2xl sm:rounded-2xl w-full max-w-md p-5 sm:p-6 flex flex-col gap-4 max-h-[92vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-bold text-[17px]">{heading}</h2>
+          <h2 id="expense-form-title" className="font-bold text-[17px]">{heading}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -133,8 +173,9 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-ink-3 mb-1.5">費用名稱</label>
+          <label htmlFor="ef-title" className="block text-xs font-medium text-ink-3 mb-1.5">費用名稱</label>
           <input
+            id="ef-title"
             value={title} onChange={e => setTitle(e.target.value)} required
             placeholder="拉麵午餐"
             className={inputClass}
@@ -142,8 +183,9 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-ink-3 mb-1.5">付款時間</label>
+          <label htmlFor="ef-paid-at" className="block text-xs font-medium text-ink-3 mb-1.5">付款時間</label>
           <input
+            id="ef-paid-at"
             value={paidAt}
             onChange={e => setPaidAt(e.target.value)}
             type="datetime-local"
@@ -154,16 +196,18 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
 
         <div className="flex gap-2.5">
           <div className="flex-1">
-            <label className="block text-xs font-medium text-ink-3 mb-1.5">金額</label>
+            <label htmlFor="ef-amount" className="block text-xs font-medium text-ink-3 mb-1.5">金額</label>
             <input
+              id="ef-amount"
               value={amount} onChange={e => setAmount(e.target.value)}
               type="number" min="0" step={currency === 'JPY' ? '1' : '0.01'} required
               className={`${inputClass} font-mono tabular-nums`}
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-ink-3 mb-1.5">幣別</label>
+            <label htmlFor="ef-currency" className="block text-xs font-medium text-ink-3 mb-1.5">幣別</label>
             <select
+              id="ef-currency"
               value={currency} onChange={e => setCurrency(e.target.value as Currency)}
               className="bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
             >
@@ -174,8 +218,9 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-ink-3 mb-1.5">由誰付款</label>
+          <label htmlFor="ef-paid-by" className="block text-xs font-medium text-ink-3 mb-1.5">由誰付款</label>
           <select
+            id="ef-paid-by"
             value={paidBy} onChange={e => setPaidBy(e.target.value)}
             className={inputClass}
           >
@@ -186,12 +231,12 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
         </div>
 
         <div>
-          {/* 分帳模式:segmented control */}
-          <div className="flex bg-fill rounded-[10px] p-[3px] gap-0.5 mb-3">
+          <div className="flex bg-fill rounded-[10px] p-[3px] gap-0.5 mb-3" role="group" aria-label="分帳模式">
             {(['equal', 'custom'] as const).map(mode => (
               <button
                 key={mode} type="button"
                 onClick={() => setSplitMode(mode)}
+                aria-pressed={splitMode === mode}
                 className={`flex-1 py-1.5 rounded-lg text-[13px] font-semibold transition-all ${
                   splitMode === mode
                     ? 'bg-white text-ink shadow-card'
@@ -223,7 +268,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
               const isCustom = rawCustom != null && rawCustom !== ''
               const autoShare = hybrid?.splits.find(s => s.user_id === m.id)?.amount
               return (
-                <div key={m.id} className="flex items-center justify-between gap-2.5 bg-[#f9f9fa] rounded-[10px] px-3 py-2">
+                <div key={m.id} className="flex items-center justify-between gap-2.5 bg-fill rounded-[10px] px-3 py-2">
                   <label className="flex items-center gap-2.5 text-[13.5px] text-ink cursor-pointer">
                     <input
                       type="checkbox"
@@ -260,6 +305,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
                         value={rawCustom ?? ''}
                         onChange={e => setCustomAmounts(prev => ({ ...prev, [m.id]: e.target.value }))}
                         disabled={!checked}
+                        aria-label={`${m.display_name} 的分帳金額`}
                         placeholder={checked && autoShare != null && numAmount > 0 ? String(autoShare) : '0'}
                         className={`w-24 text-right rounded-lg px-2 py-1.5 text-sm font-mono tabular-nums bg-white text-ink placeholder:text-ink-4/70 disabled:opacity-40 focus:outline-none focus:ring-1 focus:ring-accent/50 transition-colors ${
                           isCustom
@@ -305,7 +351,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
           )}
         </div>
 
-        {error && <p className="text-sm text-owe">{error}</p>}
+        {error && <p className="text-sm text-owe" role="alert">{error}</p>}
 
         <button
           type="submit" disabled={isPending || splitsInvalid}

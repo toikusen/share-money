@@ -18,7 +18,7 @@ export default async function NewTripPage() {
         <Link
           href="/trips"
           aria-label="返回行程"
-          className="text-ink-3 hover:text-ink-2 transition-colors"
+          className="p-2 -ml-2 rounded-lg text-ink-3 hover:text-ink-2 transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M15 18l-6-6 6-6" />
@@ -29,8 +29,9 @@ export default async function NewTripPage() {
 
       <form action={handleCreate} className="bg-white rounded-2xl shadow-card p-5 flex flex-col gap-4">
         <div>
-          <label className="block text-xs font-medium text-ink-3 mb-1.5">行程名稱</label>
+          <label htmlFor="new-trip-name" className="block text-xs font-medium text-ink-3 mb-1.5">行程名稱</label>
           <input
+            id="new-trip-name"
             name="name"
             type="text"
             required
@@ -40,17 +41,19 @@ export default async function NewTripPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-ink-3 mb-1.5">日期區間<span className="text-ink-4 font-normal ml-1">（選填）</span></label>
+          <p className="text-xs font-medium text-ink-3 mb-1.5">日期區間<span className="text-ink-4 font-normal ml-1">（選填）</span></p>
           <div className="flex items-center gap-2">
             <input
               name="start_date"
               type="date"
+              aria-label="開始日期（選填）"
               className={`${inputClass} flex-1`}
             />
-            <span className="text-ink-4 text-sm shrink-0">–</span>
+            <span className="text-ink-4 text-sm shrink-0" aria-hidden="true">–</span>
             <input
               name="end_date"
               type="date"
+              aria-label="結束日期（選填）"
               className={`${inputClass} flex-1`}
             />
           </div>
@@ -58,10 +61,11 @@ export default async function NewTripPage() {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-ink-3 mb-1.5">
+          <label htmlFor="new-trip-rate" className="block text-xs font-medium text-ink-3 mb-1.5">
             匯率（1 JPY = ? TWD）
           </label>
           <input
+            id="new-trip-rate"
             name="exchange_rate"
             type="number"
             step="0.0001"

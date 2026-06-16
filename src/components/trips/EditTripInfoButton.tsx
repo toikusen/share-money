@@ -62,8 +62,9 @@ export function EditTripInfoButton({ tripId, initialName, initialStartDate, init
   return (
     <form action={handleSubmit} className="flex flex-col gap-3 w-full">
       <div>
-        <label className="block text-xs font-medium text-ink-3 mb-1.5">行程名稱</label>
+        <label htmlFor="edit-trip-name" className="block text-xs font-medium text-ink-3 mb-1.5">行程名稱</label>
         <input
+          id="edit-trip-name"
           name="name"
           type="text"
           required
@@ -72,18 +73,20 @@ export function EditTripInfoButton({ tripId, initialName, initialStartDate, init
         />
       </div>
       <div>
-        <label className="block text-xs font-medium text-ink-3 mb-1.5">日期區間<span className="text-ink-4 font-normal ml-1">（選填）</span></label>
+        <p className="text-xs font-medium text-ink-3 mb-1.5">日期區間<span className="text-ink-4 font-normal ml-1">（選填）</span></p>
         <div className="flex items-center gap-2">
           <input
             name="start_date"
             type="date"
+            aria-label="開始日期（選填）"
             defaultValue={startDate}
             className={`${inputClass} flex-1`}
           />
-          <span className="text-ink-4 text-sm shrink-0">–</span>
+          <span className="text-ink-4 text-sm shrink-0" aria-hidden="true">–</span>
           <input
             name="end_date"
             type="date"
+            aria-label="結束日期（選填）"
             defaultValue={endDate}
             className={`${inputClass} flex-1`}
           />

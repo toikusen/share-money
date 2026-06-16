@@ -22,7 +22,7 @@ export function InviteCard({ inviteUrl }: { inviteUrl: string }) {
   return (
     <button
       onClick={handleCopy}
-      className={`shrink-0 rounded-full border border-dashed px-3 py-1.5 text-xs font-medium transition-colors ${
+      className={`shrink-0 rounded-full border border-dashed px-3 py-2.5 min-h-[40px] inline-flex items-center text-xs font-medium transition-colors ${
         state === 'copied'
           ? 'border-gain/40 text-gain'
           : state === 'error'

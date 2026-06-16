@@ -116,6 +116,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
             type="button"
             suppressHydrationWarning
             onClick={() => toggle(group.date)}
+            aria-expanded={open}
             className="flex items-baseline justify-between w-full mt-2 px-0.5 hover:opacity-70 transition-opacity"
           >
             <span suppressHydrationWarning className="text-xs font-semibold text-ink-3">{group.date}</span>
@@ -187,7 +188,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                           <button
                             type="submit"
                             aria-label="刪除費用"
-                            className="p-1.5 rounded-lg text-ink-4/70 hover:text-owe hover:bg-owe/5 transition-colors"
+                            className="p-2 rounded-lg text-ink-4/70 hover:text-owe hover:bg-owe/5 transition-colors"
                           >
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                               <polyline points="3 6 5 6 21 6" />

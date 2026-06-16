@@ -102,7 +102,7 @@ export function DailySpendChart({ expenses, exchangeRate, startDate, endDate }: 
               </span>
               <span
                 aria-hidden="true"
-                className={`w-full rounded-t-md rounded-b-[3px] anim-grow-y ${isToday ? 'bg-accent' : d.total > 0 ? 'bg-[#d8dade]' : 'bg-[#ececee]'}`}
+                className={`w-full rounded-t-md rounded-b-[3px] anim-grow-y ${isToday ? 'bg-accent' : d.total > 0 ? 'bg-edge' : 'bg-line'}`}
                 style={{ height: h, animationDelay: `${i * 60}ms` }}
               />
               <span className={`text-[10.5px] truncate max-w-full ${isToday ? 'font-semibold text-accent' : 'text-ink-3'}`}>

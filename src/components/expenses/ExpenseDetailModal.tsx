@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
 import { formatAmount } from '@/lib/utils/currency'
 import { formatExpenseDateTime } from '@/lib/utils/datetime'
 import type { Currency } from '@/types/database'
@@ -23,6 +24,39 @@ type Props = {
 
 export function ExpenseDetailModal({ expense, members, timeZone, onClose }: Props) {
   const memberMap = Object.fromEntries(members.map(m => [m.id, m.display_name]))
+  const panelRef = useRef<HTMLDivElement>(null)
+  const onCloseRef = useRef(onClose)
+  useEffect(() => { onCloseRef.current = onClose })
+
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const focusable = panel.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    first?.focus()
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') { onCloseRef.current(); return }
+      if (e.key !== 'Tab') return
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last?.focus() }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first?.focus() }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      document.body.style.overflow = prev
+    }
+  }, [])
 
   return (
     <div
@@ -30,11 +64,15 @@ export function ExpenseDetailModal({ expense, members, timeZone, onClose }: Prop
       onClick={onClose}
     >
       <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="expense-detail-title"
         className="bg-white text-ink rounded-t-2xl sm:rounded-2xl w-full max-w-md p-5 sm:p-6 flex flex-col gap-4 max-h-[80vh] overflow-y-auto"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 className="font-bold text-[17px]">{expense.title}</h2>
+          <h2 id="expense-detail-title" className="font-bold text-[17px]">{expense.title}</h2>
           <button
             type="button"
             onClick={onClose}

@@ -41,8 +41,8 @@ export default async function TripsPage() {
             <svg width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden="true">
               <circle cx="7" cy="8" r="6" fill="white" fillOpacity="0.3"/>
               <circle cx="15" cy="8" r="6" fill="white"/>
-              <line x1="15" y1="3.5" x2="15" y2="12.5" stroke="#4f61c9" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M17.5 5.5C17.5 4.5 16.5 4 15 4C13.5 4 12.5 4.7 12.5 6C12.5 7 13.5 7.5 15 8C16.5 8.5 17.5 9 17.5 10C17.5 11.3 16.5 12 15 12C13.5 12 12.5 11.5 12.5 10.5" stroke="#4f61c9" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+              <line x1="15" y1="3.5" x2="15" y2="12.5" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M17.5 5.5C17.5 4.5 16.5 4 15 4C13.5 4 12.5 4.7 12.5 6C12.5 7 13.5 7.5 15 8C16.5 8.5 17.5 9 17.5 10C17.5 11.3 16.5 12 15 12C13.5 12 12.5 11.5 12.5 10.5" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
             </svg>
           </div>
           <span className="text-[15px] font-semibold tracking-tight select-none text-ink">
@@ -52,7 +52,7 @@ export default async function TripsPage() {
         <Link
           href="/settings"
           aria-label="設定"
-          className="p-1.5 rounded-lg text-ink-4 hover:text-ink-2 hover:bg-fill transition-colors"
+          className="p-2 rounded-lg text-ink-4 hover:text-ink-2 hover:bg-fill transition-colors"
         >
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="12" cy="12" r="3"/>

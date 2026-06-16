@@ -78,7 +78,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
       <div className="mb-5">
         <Link
           href="/trips"
-          className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink-2 mb-4 transition-colors"
+          className="inline-flex items-center gap-1.5 text-[13px] text-ink-3 hover:text-ink-2 mb-4 transition-colors py-1.5"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M19 12H5M12 19l-7-7 7-7" />
@@ -140,7 +140,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           {members.map(m => (
             <span
               key={m.id}
-              title={m.display_name}
+              role="img"
+              aria-label={m.display_name}
               className="h-7 w-7 rounded-full text-xs font-semibold flex items-center justify-center ring-2 ring-surface -ml-1.5 first:ml-0 select-none"
               style={{ background: avatarBg(m.id), color: avatarFg(m.id) }}
             >
@@ -175,7 +176,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             <Link
               href={`/trips/${id}/activity`}
               aria-label="編輯紀錄"
-              className="p-1.5 rounded-lg text-ink-4 hover:text-ink-2 hover:bg-fill transition-colors"
+              className="p-2 rounded-lg text-ink-4 hover:text-ink-2 hover:bg-fill transition-colors"
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M3 12a9 9 0 1 0 2.6-6.4L3 8" />

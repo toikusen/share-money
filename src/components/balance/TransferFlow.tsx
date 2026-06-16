@@ -108,7 +108,7 @@ export function TransferFlow({ transfers, currentUserId, memberCount }: Props) {
                 key={i}
                 d={`M ${x1} ${y1} C ${xm} ${y1}, ${xm} ${y2}, ${x2} ${y2}`}
                 fill="none"
-                stroke="oklch(0.72 0.07 255)"
+                stroke="var(--color-accent-soft)"
                 strokeOpacity="0.5"
                 strokeWidth={2.5 + (e.amountTWD / maxAmt) * 10}
                 strokeLinecap="round"
