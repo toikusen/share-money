@@ -6,10 +6,11 @@ import { createClient } from '@/lib/supabase/client'
 import { createDebounce } from '@/lib/utils/timing'
 
 /**
- * Subscribes to Realtime change events on expenses and trip_members and
- * re-fetches server data when other members write. INSERT/UPDATE payloads
- * are RLS-filtered to the user's own trips; DELETE events carry only the
- * row id, so we just refresh unconditionally.
+ * Subscribes to Realtime change events on expenses, expense_splits and
+ * trip_members and re-fetches server data when other members write.
+ * expense_splits covers approval status changes (approve/reject). INSERT/UPDATE
+ * payloads are RLS-filtered to the user's own trips; DELETE events carry only
+ * the row id, so we just refresh unconditionally.
  */
 export function RealtimeRefresher() {
   const router = useRouter()
@@ -21,6 +22,7 @@ export function RealtimeRefresher() {
     const channel = supabase
       .channel('db-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expense_splits' }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'trip_members' }, refresh)
       .subscribe()
 

@@ -6,7 +6,8 @@ import { ExpenseDetailModal } from '@/components/expenses/ExpenseDetailModal'
 import { deleteExpenseAction } from '@/lib/actions/expenses'
 import { convertToTWD, formatAmount } from '@/lib/utils/currency'
 import { formatExpenseDate, formatExpenseDateTime, formatExpenseTime, groupByPaidDate } from '@/lib/utils/datetime'
-import type { Currency } from '@/types/database'
+import { isExpenseApproved, isExpenseRejected, approvalProgress } from '@/lib/utils/expenses'
+import type { ApprovalStatus, Currency } from '@/types/database'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
 
@@ -19,8 +20,18 @@ export type ExpenseDisplayRow = {
   created_by: string
   paid_at: string
   note: string | null
-  expense_splits: Array<{ user_id: string; amount: number }>
+  expense_splits: Array<{ user_id: string; amount: number; approval_status: ApprovalStatus }>
   payer: MemberProfile | null
+}
+
+/** Small status pill for pending/rejected expenses; approved shows nothing. */
+function StatusBadge({ splits }: { splits: ExpenseDisplayRow['expense_splits'] }) {
+  if (isExpenseApproved(splits)) return null
+  if (isExpenseRejected(splits)) {
+    return <span className="text-[10.5px] font-semibold text-owe bg-owe/10 rounded px-1.5 py-0.5">已拒絕</span>
+  }
+  const { approved, total } = approvalProgress(splits)
+  return <span className="text-[10.5px] font-semibold text-amber-600 bg-amber-500/10 rounded px-1.5 py-0.5">待審 {approved}/{total}</span>
 }
 
 type Props = {
@@ -143,13 +154,19 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
           {open && (
             <div className="bg-white rounded-2xl shadow-card divide-y divide-line">
               {group.items.map(expense => (
-                <div key={expense.id} className="flex justify-between items-center gap-3 px-4 py-3">
+                <div
+                  key={expense.id}
+                  className={`flex justify-between items-center gap-3 px-4 py-3 ${isExpenseApproved(expense.expense_splits) ? '' : 'opacity-60'}`}
+                >
                   <button
                     type="button"
                     onClick={() => setDetailExpenseId(expense.id)}
                     className="min-w-0 flex-1 text-left"
                   >
-                    <div className="font-medium text-[14.5px] text-ink break-words">{expense.title}</div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-medium text-[14.5px] text-ink break-words">{expense.title}</span>
+                      <StatusBadge splits={expense.expense_splits} />
+                    </div>
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-4 mt-0.5">
                       <time suppressHydrationWarning dateTime={expense.paid_at} title={formatExpenseDateTime(expense.paid_at, timeZone)}>
                         {formatExpenseTime(expense.paid_at, timeZone)}

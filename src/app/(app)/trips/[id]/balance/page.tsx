@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { calculateMemberStats, minimizeTransfers } from '@/lib/utils/balance'
+import { approvedExpenseIds } from '@/lib/utils/expenses'
 import { convertToTWD } from '@/lib/utils/currency'
 import { TransferFlow } from '@/components/balance/TransferFlow'
 import { PaidVsShareChart } from '@/components/balance/PaidVsShareChart'
@@ -58,7 +59,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
 
   const { data: splits, error: splitsError } = await supabase
     .from('expense_splits')
-    .select('expense_id, user_id, amount')
+    .select('expense_id, user_id, amount, approval_status')
     .in('expense_id', expenses?.map(e => e.id) ?? [])
 
   if (splitsError) {
@@ -66,8 +67,11 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
     throw new Error('無法載入分帳明細')
   }
 
-  const expenseRows = (expenses ?? []) as ExpenseRow[]
-  const stats = calculateMemberStats(expenseRows, (splits ?? []) as SplitRow[], trip.exchange_rate)
+  // Only fully-approved expenses settle; pending/rejected are excluded everywhere below.
+  const approvedIds = approvedExpenseIds((splits ?? []) as { expense_id: string; approval_status: 'pending' | 'approved' | 'rejected' }[])
+  const expenseRows = ((expenses ?? []) as ExpenseRow[]).filter(e => approvedIds.has(e.id))
+  const approvedSplits = ((splits ?? []) as SplitRow[]).filter(s => approvedIds.has(s.expense_id))
+  const stats = calculateMemberStats(expenseRows, approvedSplits, trip.exchange_rate)
   const transfers = minimizeTransfers(stats.map(s => ({ userId: s.userId, netTWD: s.netTWD })))
 
   // Include members with no expenses so every participant shows up

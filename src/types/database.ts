@@ -37,10 +37,13 @@ export type Expense = {
   created_at: string
 }
 
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+
 export type ExpenseSplit = {
   expense_id: string
   user_id: string
   amount: number
+  approval_status: ApprovalStatus
 }
 
 export type SplitInput = {

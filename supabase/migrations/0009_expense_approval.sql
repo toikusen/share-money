@@ -1,59 +1,41 @@
--- supabase/functions/expense_helpers.sql
+-- supabase/migrations/0009_expense_approval.sql
+-- Expense approval mode: each splitter must approve before an expense counts
+-- toward settlement. Per-splitter status lives on expense_splits; the
+-- expense-level status (pending/approved/rejected) is derived from its splits.
 
--- create_trip
-CREATE OR REPLACE FUNCTION create_trip(p_name text, p_exchange_rate numeric)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE v_trip_id uuid;
+-- ============================================================
+-- SCHEMA
+-- ============================================================
+
+-- DEFAULT 'approved' grandfathers all existing rows so past settlements are
+-- unaffected. New splits set the value explicitly in the RPCs below.
+ALTER TABLE expense_splits ADD COLUMN approval_status text NOT NULL
+  DEFAULT 'approved' CHECK (approval_status IN ('pending', 'approved', 'rejected'));
+
+CREATE INDEX expense_splits_user_status_idx ON expense_splits (user_id, approval_status);
+
+-- ============================================================
+-- REALTIME
+-- ============================================================
+
+-- expense_splits wasn't in the publication before; approvals change only this
+-- table, so without it the other members' screens/badge wouldn't update live.
+-- Idempotent: skip if a previous environment already added it manually.
+DO $$
 BEGIN
-  INSERT INTO trips (name, created_by, exchange_rate)
-  VALUES (p_name, auth.uid(), p_exchange_rate)
-  RETURNING id INTO v_trip_id;
-
-  INSERT INTO trip_members (trip_id, user_id) VALUES (v_trip_id, auth.uid());
-
-  INSERT INTO activity_logs (trip_id, actor_id, action)
-  VALUES (v_trip_id, auth.uid(), 'trip.created');
-
-  RETURN v_trip_id;
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION create_trip FROM public, anon;
-GRANT  EXECUTE ON FUNCTION create_trip TO authenticated;
-
--- join_trip
-CREATE OR REPLACE FUNCTION join_trip(p_invite_token uuid)
-RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_trip_id uuid;
-  v_count   integer;
-BEGIN
-  SELECT id INTO v_trip_id FROM trips WHERE invite_token = p_invite_token;
-  IF v_trip_id IS NULL THEN RAISE EXCEPTION 'INVALID_TOKEN'; END IF;
-
-  INSERT INTO trip_members (trip_id, user_id) VALUES (v_trip_id, auth.uid())
-  ON CONFLICT (trip_id, user_id) DO NOTHING;
-  GET DIAGNOSTICS v_count = ROW_COUNT;
-
-  -- Re-joining via the invite link is a no-op; only log first-time joins.
-  IF v_count > 0 THEN
-    INSERT INTO activity_logs (trip_id, actor_id, action)
-    VALUES (v_trip_id, auth.uid(), 'member.joined');
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'expense_splits'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.expense_splits;
   END IF;
+END $$;
 
-  RETURN v_trip_id;
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION join_trip FROM public, anon;
-GRANT  EXECUTE ON FUNCTION join_trip TO authenticated;
+-- ============================================================
+-- RPCs  (kept in sync with supabase/functions/expense_helpers.sql)
+-- ============================================================
 
--- create_expense_with_splits
-DROP FUNCTION IF EXISTS create_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
-DROP FUNCTION IF EXISTS create_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb);
-
+-- create_expense_with_splits: creator's own split is auto-approved, others pending
 CREATE OR REPLACE FUNCTION create_expense_with_splits(
   p_trip_id  uuid,
   p_title    text,
@@ -101,7 +83,6 @@ BEGIN
   VALUES (p_trip_id, p_title, p_amount, p_currency, p_paid_by, p_paid_at, NULLIF(btrim(p_note), ''), auth.uid())
   RETURNING id INTO v_expense_id;
 
-  -- Creator's own split is auto-approved; everyone else's starts pending.
   INSERT INTO expense_splits (expense_id, user_id, amount, approval_status)
   SELECT v_expense_id, (s->>'user_id')::uuid, (s->>'amount')::numeric,
          CASE WHEN (s->>'user_id')::uuid = auth.uid() THEN 'approved' ELSE 'pending' END
@@ -117,10 +98,8 @@ $$;
 REVOKE EXECUTE ON FUNCTION create_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb, text) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION create_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb, text) TO authenticated;
 
--- update_expense_with_splits
-DROP FUNCTION IF EXISTS update_expense_with_splits(uuid, text, numeric, text, uuid, jsonb);
-DROP FUNCTION IF EXISTS update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb);
-
+-- update_expense_with_splits: any edit resets approvals — all splits back to
+-- pending, creator's own auto-approved (re-submit for re-approval).
 CREATE OR REPLACE FUNCTION update_expense_with_splits(
   p_expense_id uuid,
   p_title      text,
@@ -228,55 +207,6 @@ END;
 $$;
 REVOKE EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb, text) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb, text) TO authenticated;
-
--- update_trip_exchange_rate
-CREATE OR REPLACE FUNCTION update_trip_exchange_rate(p_trip_id uuid, p_rate numeric)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE v_old_rate numeric;
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = auth.uid()) THEN
-    RAISE EXCEPTION 'NOT_MEMBER';
-  END IF;
-  IF p_rate <= 0 THEN RAISE EXCEPTION 'INVALID_RATE'; END IF;
-
-  SELECT exchange_rate INTO v_old_rate FROM trips WHERE id = p_trip_id;
-  IF v_old_rate = p_rate THEN RETURN; END IF;
-
-  UPDATE trips SET exchange_rate = p_rate WHERE id = p_trip_id;
-
-  INSERT INTO activity_logs (trip_id, actor_id, action, details)
-  VALUES (p_trip_id, auth.uid(), 'trip.rate_updated',
-          jsonb_build_object('old_rate', v_old_rate, 'new_rate', p_rate));
-END;
-$$;
-REVOKE EXECUTE ON FUNCTION update_trip_exchange_rate FROM public, anon;
-GRANT  EXECUTE ON FUNCTION update_trip_exchange_rate TO authenticated;
-
--- delete_expense
-CREATE OR REPLACE FUNCTION delete_expense(p_expense_id uuid)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE v_expense expenses%ROWTYPE;
-BEGIN
-  SELECT * INTO v_expense FROM expenses WHERE id = p_expense_id;
-  -- Already gone (double-click, stale tab): deleting is idempotent.
-  IF v_expense.id IS NULL THEN RETURN; END IF;
-  -- Only the expense creator may delete (mirrors expenses_delete RLS policy)
-  IF v_expense.created_by <> auth.uid() THEN RAISE EXCEPTION 'NOT_OWNER'; END IF;
-
-  INSERT INTO activity_logs (trip_id, actor_id, action, details)
-  VALUES (v_expense.trip_id, auth.uid(), 'expense.deleted',
-          jsonb_build_object('title', v_expense.title, 'amount', v_expense.amount, 'currency', v_expense.currency));
-
-  DELETE FROM expenses WHERE id = p_expense_id;
-END;
-$$;
-
-REVOKE EXECUTE ON FUNCTION delete_expense(uuid) FROM public, anon;
-GRANT  EXECUTE ON FUNCTION delete_expense(uuid) TO authenticated;
 
 -- approve_expense: caller approves their own split. rejected is terminal —
 -- once any splitter rejected, no one can approve until the creator edits.
