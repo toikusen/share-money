@@ -1,5 +1,43 @@
 import { describe, it, expect } from 'vitest'
-import { validateExpenseInput } from '@/lib/utils/expenses'
+import {
+  validateExpenseInput,
+  isExpenseApproved,
+  isExpenseRejected,
+  approvedExpenseIds,
+  approvalProgress,
+} from '@/lib/utils/expenses'
+import type { ApprovalStatus } from '@/types/database'
+
+const s = (...statuses: ApprovalStatus[]) => statuses.map(a => ({ approval_status: a }))
+
+describe('expense approval helpers', () => {
+  it('isExpenseApproved: true only when all splits approved', () => {
+    expect(isExpenseApproved(s('approved', 'approved'))).toBe(true)
+    expect(isExpenseApproved(s('approved', 'pending'))).toBe(false)
+    expect(isExpenseApproved(s('approved', 'rejected'))).toBe(false)
+    expect(isExpenseApproved([])).toBe(false)
+  })
+
+  it('isExpenseRejected: true when any split rejected', () => {
+    expect(isExpenseRejected(s('approved', 'rejected'))).toBe(true)
+    expect(isExpenseRejected(s('approved', 'pending'))).toBe(false)
+  })
+
+  it('approvedExpenseIds: keeps only fully-approved expenses', () => {
+    const ids = approvedExpenseIds([
+      { expense_id: 'e1', approval_status: 'approved' },
+      { expense_id: 'e1', approval_status: 'approved' },
+      { expense_id: 'e2', approval_status: 'approved' },
+      { expense_id: 'e2', approval_status: 'pending' },
+      { expense_id: 'e3', approval_status: 'rejected' },
+    ])
+    expect([...ids].sort()).toEqual(['e1'])
+  })
+
+  it('approvalProgress: counts approved over total', () => {
+    expect(approvalProgress(s('approved', 'pending', 'approved'))).toEqual({ approved: 2, total: 3 })
+  })
+})
 
 describe('validateExpenseInput', () => {
   const validInput = {

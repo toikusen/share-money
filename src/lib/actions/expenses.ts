@@ -14,6 +14,7 @@ const RPC_ERROR_MESSAGES: Record<string, string> = {
   SPLIT_SUM_MISMATCH: '分擔金額總和不等於費用金額',
   JPY_SPLIT_NOT_INTEGER: 'JPY 金額必須為整數',
   PAID_AT_REQUIRED: '請選擇付款時間',
+  EXPENSE_REJECTED: '此費用已被拒絕,請等建立者修改後再審核',
 }
 
 function mapRpcError(message: string): string {
@@ -96,6 +97,43 @@ export async function updateExpenseAction(params: {
   if (error) return { error: mapRpcError(error.message) }
 
   revalidatePath(`/trips/${tripId}`)
+  return { success: true }
+}
+
+/**
+ * Revalidate every surface that reflects approval state: the review page,
+ * the trip and its balance, plus the layout for the nav badge count.
+ */
+function revalidateApprovalSurfaces(tripId?: string) {
+  revalidatePath('/review')
+  revalidatePath('/', 'layout')
+  if (tripId) {
+    revalidatePath(`/trips/${tripId}`)
+    revalidatePath(`/trips/${tripId}/balance`)
+  }
+}
+
+export async function approveExpenseAction(expenseId: string, tripId?: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('approve_expense', { p_expense_id: expenseId })
+  if (error) return { error: mapRpcError(error.message) }
+  revalidateApprovalSurfaces(tripId)
+  return { success: true }
+}
+
+export async function rejectExpenseAction(expenseId: string, tripId?: string) {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('reject_expense', { p_expense_id: expenseId })
+  if (error) return { error: mapRpcError(error.message) }
+  revalidateApprovalSurfaces(tripId)
+  return { success: true }
+}
+
+export async function approveAllPendingAction() {
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('approve_all_pending')
+  if (error) return { error: mapRpcError(error.message) }
+  revalidateApprovalSurfaces()
   return { success: true }
 }
 

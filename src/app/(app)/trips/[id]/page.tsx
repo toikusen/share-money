@@ -9,6 +9,7 @@ import { getRequestSiteUrl } from '@/lib/site-url'
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton'
 import { EditTripInfoButton } from '@/components/trips/EditTripInfoButton'
 import { calculateMemberStats } from '@/lib/utils/balance'
+import { isExpenseApproved } from '@/lib/utils/expenses'
 import { avatarBg, avatarFg, avatarChar } from '@/lib/utils/avatar'
 import Link from 'next/link'
 
@@ -54,9 +55,10 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const inviteUrl = `${await getRequestSiteUrl()}/join/${trip.invite_token}`
   const canDeleteTrip = trip.created_by === user!.id
 
-  // 你的目前淨額 — 結算入口直接預告答案
-  const statRows = expenseRows.map(e => ({ id: e.id, amount: e.amount, currency: e.currency, paid_by: e.paid_by }))
-  const splitRows = expenseRows.flatMap(e =>
+  // 你的目前淨額 — 結算入口直接預告答案。只計入全員審核通過的費用。
+  const approvedRows = expenseRows.filter(e => isExpenseApproved(e.expense_splits))
+  const statRows = approvedRows.map(e => ({ id: e.id, amount: e.amount, currency: e.currency, paid_by: e.paid_by }))
+  const splitRows = approvedRows.flatMap(e =>
     e.expense_splits.map(s => ({ expense_id: e.id, user_id: s.user_id, amount: s.amount }))
   )
   const stats = calculateMemberStats(statRows, splitRows, trip.exchange_rate)
@@ -128,7 +130,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
       {/* 每日支出(點長條跳到該日明細) */}
       <DailySpendChart
-        expenses={expenseRows.map(e => ({ paid_at: e.paid_at, amount: e.amount, currency: e.currency }))}
+        expenses={approvedRows.map(e => ({ paid_at: e.paid_at, amount: e.amount, currency: e.currency }))}
         exchangeRate={trip.exchange_rate}
         startDate={trip.start_date}
         endDate={trip.end_date}

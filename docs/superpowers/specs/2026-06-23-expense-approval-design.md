@@ -134,6 +134,11 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.expense_splits;
 1 欄位 + 5 個 RPC(改 2 加 3)+ 1 個新頁 `/review` + 導覽 badge + 清單狀態標籤 + 結算/圖表過濾。
 無新表、無改 `expenses` schema、無動 activity 型別系統。
 
+## 實作提醒
+
+- approve / reject / approve_all 的 server action 完成後,`revalidatePath` 要涵蓋:`/review`、相關 trip 頁 `/trips/[id]`、balance 頁 `/trips/[id]/balance`;badge 在 layout,必要時 `revalidatePath('/', 'layout')`。
+- `ALTER PUBLICATION supabase_realtime ADD TABLE public.expense_splits;` 寫成可重複執行(先檢查 `pg_publication_tables` 是否已含該表,或用 DO block 包 exception),避免環境已手動加過時報錯。
+
 ## 不做(YAGNI)
 
 - 審核事件寫入 activity log(日後需稽核再加)
