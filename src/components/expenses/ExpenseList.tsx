@@ -18,6 +18,7 @@ export type ExpenseDisplayRow = {
   paid_by: string
   created_by: string
   paid_at: string
+  note: string | null
   expense_splits: Array<{ user_id: string; amount: number }>
   payer: MemberProfile | null
 }
@@ -178,6 +179,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                             currency: expense.currency,
                             paid_by: expense.paid_by,
                             paid_at: expense.paid_at,
+                            note: expense.note,
                             splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
                           }}
                         />

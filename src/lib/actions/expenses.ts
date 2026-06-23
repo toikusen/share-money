@@ -33,9 +33,10 @@ export async function createExpenseAction(params: {
   currency: Currency
   paidBy: string
   paidAt: string
+  note?: string
   splits: SplitInput[]
 }) {
-  const { tripId, title, amount, currency, paidBy, paidAt, splits } = params
+  const { tripId, title, amount, currency, paidBy, paidAt, note, splits } = params
 
   const validationError = validateExpenseInput({ title, amount, splits })
   if (validationError) return { error: validationError }
@@ -52,6 +53,7 @@ export async function createExpenseAction(params: {
     p_paid_by: paidBy,
     p_paid_at: paidAtIso,
     p_splits: splits,
+    p_note: note ?? null,
   })
 
   if (error) return { error: mapRpcError(error.message) }
@@ -68,9 +70,10 @@ export async function updateExpenseAction(params: {
   currency: Currency
   paidBy: string
   paidAt: string
+  note?: string
   splits: SplitInput[]
 }) {
-  const { expenseId, tripId, title, amount, currency, paidBy, paidAt, splits } = params
+  const { expenseId, tripId, title, amount, currency, paidBy, paidAt, note, splits } = params
 
   const validationError = validateExpenseInput({ title, amount, splits })
   if (validationError) return { error: validationError }
@@ -87,6 +90,7 @@ export async function updateExpenseAction(params: {
     p_paid_by: paidBy,
     p_paid_at: paidAtIso,
     p_splits: splits,
+    p_note: note ?? null,
   })
 
   if (error) return { error: mapRpcError(error.message) }

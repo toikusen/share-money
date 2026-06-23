@@ -10,6 +10,7 @@ export type ExpenseFormValues = {
   currency: Currency
   paidBy: string
   paidAt: string
+  note?: string
   splits: SplitInput[]
 }
 
@@ -44,6 +45,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
   const [currency, setCurrency] = useState<Currency>(initial?.currency ?? 'JPY')
   const [paidBy, setPaidBy] = useState(initial?.paidBy ?? currentUserId)
   const [paidAt, setPaidAt] = useState(() => toDateTimeLocalValue(initial?.paidAt))
+  const [note, setNote] = useState(initial?.note ?? '')
   const [splitMode, setSplitMode] = useState<'equal' | 'custom'>(() =>
     initial && !isEqualSplit(initial.amount, initial.currency, initial.splits.map(s => s.amount))
       ? 'custom'
@@ -134,6 +136,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
           currency,
           paidBy,
           paidAt: paidAtDate.toISOString(),
+          note: note.trim(),
           splits: computedSplits(),
         }) ?? { success: true }
         resolve()
@@ -228,6 +231,17 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
               <option key={m.id} value={m.id}>{m.display_name}{m.id === currentUserId ? '（我）' : ''}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label htmlFor="ef-note" className="block text-xs font-medium text-ink-3 mb-1.5">備註<span className="text-ink-4 font-normal">（選填）</span></label>
+          <textarea
+            id="ef-note"
+            value={note} onChange={e => setNote(e.target.value)}
+            rows={2}
+            placeholder="補充說明…"
+            className={`${inputClass} resize-none`}
+          />
         </div>
 
         <div>

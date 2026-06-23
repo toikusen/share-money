@@ -14,6 +14,7 @@ type Props = {
     amount: number
     currency: Currency
     paid_at: string
+    note: string | null
     payer: MemberProfile | null
     expense_splits: Array<{ user_id: string; amount: number }>
   }
@@ -90,6 +91,13 @@ export function ExpenseDetailModal({ expense, members, timeZone, onClose }: Prop
             value={formatExpenseDateTime(expense.paid_at, timeZone)}
           />
         </div>
+
+        {expense.note && (
+          <div>
+            <p className="text-xs font-medium text-ink-3 mb-1.5">備註</p>
+            <p className="text-[13.5px] text-ink whitespace-pre-wrap break-words bg-fill rounded-[10px] px-3 py-2.5">{expense.note}</p>
+          </div>
+        )}
 
         <div>
           <p className="text-xs font-medium text-ink-3 mb-2">分帳明細</p>
