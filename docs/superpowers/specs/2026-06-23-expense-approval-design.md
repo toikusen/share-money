@@ -40,11 +40,22 @@ CREATE INDEX expense_splits_user_status_idx ON expense_splits (user_id, approval
 - 全部 split = `approved` → 整筆 **approved**(計入結算)
 - 其餘 → **pending**
 
-## 結算與圖表
+## 型別
 
-`calculateMemberStats` 計算前先過濾:**只保留「所有 split 都 approved」的費用**。
-pending / rejected 不計入淨額、不計入每日支出圖(`DailySpendChart`)。
-trip 費用清單仍顯示這些筆,帶狀態標籤。
+- `ExpenseSplit`(`src/types/database.ts`)加 `approval_status: 'pending' | 'approved' | 'rejected'`。
+- 所有 `select('..., expense_splits(*)')` 的顯示型別(`ExpenseWithSplits`、`ExpenseDisplayRow` 等)自然帶到,確認編譯通過。
+
+## 結算與圖表(所有消費端都要吃同一組 approved-only rows)
+
+定義一個共用過濾:**只保留「所有 split 都 approved」的費用**(helper 放 `src/lib/utils/expenses.ts`,例如 `isApproved(expense)` / `approvedOnly(expenses)`)。
+pending / rejected 不計入。以下消費端**全部**要套用同一過濾,避免各頁不一致:
+
+- `calculateMemberStats`(`src/lib/utils/balance.ts`)的輸入 rows
+- trip 首頁 `myNet`(`trips/[id]/page.tsx`)
+- balance 頁的 `totalTWD` 等彙總(`trips/[id]/balance/page.tsx`)
+- `DailySpendChart` 的輸入
+
+trip 費用清單則**不過濾**,全部顯示但帶狀態標籤。
 
 ## RPC(SECURITY DEFINER,沿用現有模式)
 
@@ -55,11 +66,17 @@ trip 費用清單仍顯示這些筆,帶狀態標籤。
 
 ### 新增
 
-- **`approve_expense(p_expense_id)`**:把「我」在該費用的 split 設為 approved。
+- **`approve_expense(p_expense_id)`**:把「我」在該費用的 pending split 設為 approved。
+  **若該費用已有任何 rejected split → 直接 raise `EXPENSE_REJECTED`**(rejected 是終態,只有建立者編輯才能重審,不允許撤回拒絕)。
 - **`reject_expense(p_expense_id)`**:把「我」那筆設為 rejected(整筆即變 rejected)。
-- **`approve_all_pending()`**:一鍵 — 把我所有 pending split 一次設 approved,自動跳過已被別人 rejected 的費用。
+- **`approve_all_pending()`**:一鍵 — 把我所有 pending split 一次設 approved,**自動跳過任何含 rejected split 的費用**。
 
-每個都檢查 `auth.uid()`、只能改自己那筆。錯誤訊息沿用現有 `RPC_ERROR_MESSAGES` → 中文對應。
+每個都檢查 `auth.uid()`、只能改自己那筆。
+
+**rejected 終態規則:** 一旦整筆 rejected,其他 pending 分擔者不能再 approve(`approve_expense` 報錯,一鍵也跳過)。唯一出路是建立者 `update_expense_with_splits`(重設全部為 pending)或刪除。
+
+錯誤訊息沿用現有 `RPC_ERROR_MESSAGES` → 中文對應,需新增 key:
+`EXPENSE_REJECTED`(此費用已被拒絕,請等建立者修改)、以及 approve/reject 的 `NOT_MEMBER` / split 不存在等(沿用既有 key)。對應寫進 [src/lib/actions/expenses.ts](../../../src/lib/actions/expenses.ts) 的 `RPC_ERROR_MESSAGES`。
 
 審核動作**不寫 `activity_logs`**(避免洗版,且不動 `ActivityEvent` 型別)。
 `expense.created` 仍照舊在建立時記一筆。
@@ -76,17 +93,34 @@ trip 費用清單仍顯示這些筆,帶狀態標籤。
 
 ### 導覽 badge
 
-`(app)/layout.tsx` 加「待審」未讀數(我的 pending split 筆數),導去 `/review`。
+`(app)/layout.tsx` 加「待審」未讀數,導去 `/review`。
+**計數條件必須與 `/review` 清單一致**:我的 split 是 `pending` **且該費用沒有任何 rejected split**。
+(避免「A 拒絕、B 仍 pending」時 badge 顯示 1 但 `/review` 空白。)建議把這個查詢抽成共用函式,badge 與 `/review` 共用。
 
 ### trip 費用清單
 
 - pending / rejected 費用顯示狀態標籤(如「待審 1/2」「已拒絕」),視覺淡化。
 - 建立者可對 rejected 費用直接編輯(走重審)或刪除 — 沿用現有 `EditExpenseButton` / 刪除流程。
 
-## Realtime
+## Realtime(必做,現況未涵蓋)
 
-審核改的是 `expense_splits`,現有 `RealtimeRefresher` 監聽變動即刷新。
-實作前驗證 `0004_enable_realtime.sql` 已含 `expense_splits`;若無則補。
+審核改的是 `expense_splits`,但現況 realtime **沒有**監聽這張表:
+- migration `0004` 只 publish 了 `expenses`、`trip_members`。
+- `RealtimeRefresher.tsx` 只訂閱 `expenses`、`trip_members`。
+
+因此 `0009` 必須加:
+
+```sql
+ALTER PUBLICATION supabase_realtime ADD TABLE public.expense_splits;
+```
+
+並在 `RealtimeRefresher.tsx` 新增一條訂閱:
+
+```ts
+.on('postgres_changes', { event: '*', schema: 'public', table: 'expense_splits' }, refresh)
+```
+
+否則 A 同意/拒絕後,B 的畫面與 badge 不會即時更新。
 
 ## 範圍總結
 
