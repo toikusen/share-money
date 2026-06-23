@@ -46,6 +46,7 @@ export function NotificationToggle() {
         onClick={toggle}
         disabled={busy}
         aria-pressed={state === 'on'}
+        aria-label={state === 'on' ? '關閉推播通知' : '開啟推播通知'}
         className={`relative h-6 w-11 rounded-full transition-colors disabled:opacity-50 ${state === 'on' ? 'bg-accent' : 'bg-line'}`}
       >
         <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${state === 'on' ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
