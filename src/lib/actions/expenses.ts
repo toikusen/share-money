@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { validateExpenseInput } from '@/lib/utils/expenses'
 import type { SplitInput, Currency } from '@/types/database'
+import { sendPushToUsers } from '@/lib/push'
+import { pendingRecipients, approvalNeededPayload, rejectedPayload, approvedPayload } from '@/lib/notify'
 
 const RPC_ERROR_MESSAGES: Record<string, string> = {
   NOT_MEMBER: '你不是此行程成員',
@@ -46,7 +48,8 @@ export async function createExpenseAction(params: {
   if (!paidAtIso) return { error: '請選擇付款時間' }
 
   const supabase = await createClient()
-  const { error } = await supabase.rpc('create_expense_with_splits', {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: expenseId, error } = await supabase.rpc('create_expense_with_splits', {
     p_trip_id: tripId,
     p_title: title.trim(),
     p_amount: amount,
@@ -58,6 +61,11 @@ export async function createExpenseAction(params: {
   })
 
   if (error) return { error: mapRpcError(error.message) }
+
+  if (user && expenseId) {
+    const recipients = pendingRecipients(splits, user.id)
+    await sendPushToUsers(recipients, approvalNeededPayload(title.trim()))
+  }
 
   revalidatePath(`/trips/${tripId}`)
   return { success: true }
@@ -115,24 +123,75 @@ function revalidateApprovalSurfaces(tripId?: string) {
 
 export async function approveExpenseAction(expenseId: string, tripId?: string) {
   const supabase = await createClient()
-  const { error } = await supabase.rpc('approve_expense', { p_expense_id: expenseId })
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: fullyApprovedId, error } = await supabase.rpc('approve_expense', { p_expense_id: expenseId })
   if (error) return { error: mapRpcError(error.message) }
+
+  if (fullyApprovedId) {
+    const { data: exp } = await supabase
+      .from('expenses')
+      .select('title, trip_id, created_by')
+      .eq('id', fullyApprovedId)
+      .single()
+    if (exp && exp.created_by !== user?.id) {
+      await sendPushToUsers([exp.created_by], approvedPayload(exp.title, exp.trip_id))
+    }
+  }
+
   revalidateApprovalSurfaces(tripId)
   return { success: true }
 }
 
 export async function rejectExpenseAction(expenseId: string, tripId?: string) {
   const supabase = await createClient()
-  const { error } = await supabase.rpc('reject_expense', { p_expense_id: expenseId })
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: didReject, error } = await supabase.rpc('reject_expense', { p_expense_id: expenseId })
   if (error) return { error: mapRpcError(error.message) }
+
+  if (didReject) {
+    const { data: exp } = await supabase
+      .from('expenses')
+      .select('title, trip_id, created_by')
+      .eq('id', expenseId)
+      .single()
+    if (exp && exp.created_by !== user?.id) {
+      await sendPushToUsers([exp.created_by], rejectedPayload(exp.title, exp.trip_id))
+    }
+  }
+
   revalidateApprovalSurfaces(tripId)
   return { success: true }
 }
 
 export async function approveAllPendingAction() {
   const supabase = await createClient()
-  const { error } = await supabase.rpc('approve_all_pending')
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: ids, error } = await supabase.rpc('approve_all_pending')
   if (error) return { error: mapRpcError(error.message) }
+
+  // PostgREST can return SETOF uuid as string[] OR as { approve_all_pending: string }[]
+  // depending on version. Normalize defensively to string[] before use.
+  const rawIds = (ids ?? []) as unknown[]
+  const approvedIds = rawIds
+    .map(r =>
+      typeof r === 'string' ? r : ((r as Record<string, unknown>).approve_all_pending ?? (r as Record<string, unknown>).expense_id ?? Object.values(r as Record<string, unknown>)[0]) as string
+    )
+    .filter(Boolean)
+
+  if (approvedIds.length > 0) {
+    const { data: exps } = await supabase
+      .from('expenses')
+      .select('title, trip_id, created_by')
+      .in('id', approvedIds)
+    await Promise.all(
+      (exps ?? []).map(exp =>
+        exp.created_by !== user?.id
+          ? sendPushToUsers([exp.created_by], approvedPayload(exp.title, exp.trip_id))
+          : Promise.resolve()
+      )
+    )
+  }
+
   revalidateApprovalSurfaces()
   return { success: true }
 }

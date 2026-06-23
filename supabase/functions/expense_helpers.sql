@@ -278,12 +278,15 @@ $$;
 REVOKE EXECUTE ON FUNCTION delete_expense(uuid) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION delete_expense(uuid) TO authenticated;
 
--- approve_expense: caller approves their own split. rejected is terminal —
--- once any splitter rejected, no one can approve until the creator edits.
+-- approve_expense: returns the expense_id IFF this call made it fully approved.
+DROP FUNCTION IF EXISTS approve_expense(uuid);
 CREATE OR REPLACE FUNCTION approve_expense(p_expense_id uuid)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_changed int;
+  v_all_approved boolean;
 BEGIN
   IF EXISTS (SELECT 1 FROM expense_splits WHERE expense_id = p_expense_id AND approval_status = 'rejected') THEN
     RAISE EXCEPTION 'EXPENSE_REJECTED';
@@ -291,38 +294,58 @@ BEGIN
 
   UPDATE expense_splits SET approval_status = 'approved'
   WHERE expense_id = p_expense_id AND user_id = auth.uid() AND approval_status <> 'approved';
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+
+  IF v_changed = 0 THEN RETURN NULL; END IF;
+
+  SELECT bool_and(approval_status = 'approved') INTO v_all_approved
+  FROM expense_splits WHERE expense_id = p_expense_id;
+
+  IF v_all_approved THEN RETURN p_expense_id; END IF;
+  RETURN NULL;
 END;
 $$;
 REVOKE EXECUTE ON FUNCTION approve_expense(uuid) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION approve_expense(uuid) TO authenticated;
 
--- reject_expense: caller rejects their own split → whole expense becomes rejected.
+-- reject_expense: returns true only when this call flipped it to rejected.
+DROP FUNCTION IF EXISTS reject_expense(uuid);
 CREATE OR REPLACE FUNCTION reject_expense(p_expense_id uuid)
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE v_changed int;
 BEGIN
   UPDATE expense_splits SET approval_status = 'rejected'
   WHERE expense_id = p_expense_id AND user_id = auth.uid() AND approval_status <> 'rejected';
+  GET DIAGNOSTICS v_changed = ROW_COUNT;
+  RETURN v_changed > 0;
 END;
 $$;
 REVOKE EXECUTE ON FUNCTION reject_expense(uuid) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION reject_expense(uuid) TO authenticated;
 
--- approve_all_pending: one-click approve all my pending splits, skipping any
--- expense that already has a rejected split.
+-- approve_all_pending: returns expense_ids that became fully approved this call.
+DROP FUNCTION IF EXISTS approve_all_pending();
 CREATE OR REPLACE FUNCTION approve_all_pending()
-RETURNS void LANGUAGE plpgsql SECURITY DEFINER
+RETURNS SETOF uuid LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  UPDATE expense_splits es SET approval_status = 'approved'
-  WHERE es.user_id = auth.uid()
-    AND es.approval_status = 'pending'
-    AND NOT EXISTS (
-      SELECT 1 FROM expense_splits s2
-      WHERE s2.expense_id = es.expense_id AND s2.approval_status = 'rejected'
-    );
+  RETURN QUERY
+  WITH changed AS (
+    UPDATE expense_splits es SET approval_status = 'approved'
+    WHERE es.user_id = auth.uid()
+      AND es.approval_status = 'pending'
+      AND NOT EXISTS (
+        SELECT 1 FROM expense_splits s2
+        WHERE s2.expense_id = es.expense_id AND s2.approval_status = 'rejected'
+      )
+    RETURNING es.expense_id
+  )
+  SELECT c.expense_id FROM (SELECT DISTINCT expense_id FROM changed) c
+  WHERE (SELECT bool_and(approval_status = 'approved')
+         FROM expense_splits WHERE expense_id = c.expense_id);
 END;
 $$;
 REVOKE EXECUTE ON FUNCTION approve_all_pending() FROM public, anon;

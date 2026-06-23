@@ -1,6 +1,7 @@
 'use client'
 
 import { signOutAction } from '@/lib/actions/profile'
+import { disablePush } from '@/lib/push-client'
 import { useTransition } from 'react'
 
 export function SignOutButton() {
@@ -10,7 +11,10 @@ export function SignOutButton() {
     <button
       type="button"
       disabled={isPending}
-      onClick={() => startTransition(() => signOutAction())}
+      onClick={() => startTransition(async () => {
+        await disablePush().catch(() => {})
+        await signOutAction()
+      })}
       className="w-full flex items-center justify-center gap-2 rounded-[10px] bg-fill px-4 py-2 text-sm font-medium text-ink-2 transition-colors hover:bg-owe/10 hover:text-owe disabled:opacity-50"
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
