@@ -172,20 +172,24 @@ export async function approveAllPendingAction() {
   // PostgREST can return SETOF uuid as string[] OR as { approve_all_pending: string }[]
   // depending on version. Normalize defensively to string[] before use.
   const rawIds = (ids ?? []) as unknown[]
-  const approvedIds = rawIds.map(r =>
-    typeof r === 'string' ? r : ((r as Record<string, unknown>).approve_all_pending ?? (r as Record<string, unknown>).expense_id ?? Object.values(r as Record<string, unknown>)[0]) as string
-  )
+  const approvedIds = rawIds
+    .map(r =>
+      typeof r === 'string' ? r : ((r as Record<string, unknown>).approve_all_pending ?? (r as Record<string, unknown>).expense_id ?? Object.values(r as Record<string, unknown>)[0]) as string
+    )
+    .filter(Boolean)
 
   if (approvedIds.length > 0) {
     const { data: exps } = await supabase
       .from('expenses')
       .select('title, trip_id, created_by')
       .in('id', approvedIds)
-    for (const exp of exps ?? []) {
-      if (exp.created_by !== user?.id) {
-        await sendPushToUsers([exp.created_by], approvedPayload(exp.title, exp.trip_id))
-      }
-    }
+    await Promise.all(
+      (exps ?? []).map(exp =>
+        exp.created_by !== user?.id
+          ? sendPushToUsers([exp.created_by], approvedPayload(exp.title, exp.trip_id))
+          : Promise.resolve()
+      )
+    )
   }
 
   revalidateApprovalSurfaces()
