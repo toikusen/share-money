@@ -41,17 +41,29 @@ ALTER TABLE push_subscriptions ENABLE ROW LEVEL SECURITY;
 -- 使用者只能讀寫自己的訂閱;發送給別人時走 service role 繞過 RLS。
 CREATE POLICY "push_subscriptions_select" ON push_subscriptions FOR SELECT TO authenticated USING (user_id = auth.uid());
 CREATE POLICY "push_subscriptions_insert" ON push_subscriptions FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+-- upsert(on conflict endpoint)會走 UPDATE 路徑,故必須有 UPDATE policy,否則同一 endpoint 重新訂閱會被 RLS 擋下。
+CREATE POLICY "push_subscriptions_update" ON push_subscriptions FOR UPDATE TO authenticated
+  USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
 CREATE POLICY "push_subscriptions_delete" ON push_subscriptions FOR DELETE TO authenticated USING (user_id = auth.uid());
 ```
 
-- 一個使用者多裝置 = 多列。`endpoint` UNIQUE;重新訂閱 upsert(`on conflict (endpoint)`)。
+- 一個使用者多裝置 = 多列。`endpoint` UNIQUE;重新訂閱 `upsert(..., { onConflict: 'endpoint' })`(走 UPDATE,見上方 policy)。
 
 ### RPC 改回傳值(同一個 `0010`,並同步 `expense_helpers.sql` snapshot)
 
-事件③需要知道「這次操作讓哪些費用變成全員通過」。由 RPC 自己回報,避免事後再查的競態與重複通知。
+事件②③需要知道「這次操作真正改變了什麼」。由 RPC 用 `UPDATE ... RETURNING` 自己回報,避免重試/重複點擊造成重複通知。
 
-- `approve_expense(p_expense_id)` **RETURNS uuid**:若此次造成整筆全員通過則回該 expense_id,否則回 NULL。(已 rejected 時照舊 raise `EXPENSE_REJECTED`。)
-- `approve_all_pending()` **RETURNS SETOF uuid**:回此次變成全員通過的所有 expense_id。
+**改回傳型別前必須先 `DROP`**:`0009` 的 `approve_expense`/`approve_all_pending`/`reject_expense` 都是 `RETURNS void`,Postgres 不能用 `CREATE OR REPLACE` 改 return type,`0010` 要先:
+```sql
+DROP FUNCTION approve_expense(uuid);
+DROP FUNCTION approve_all_pending();
+DROP FUNCTION reject_expense(uuid);
+```
+再以新回傳型別重建,並 `REVOKE/GRANT` 重設權限。
+
+- `approve_expense(p_expense_id)` **RETURNS uuid**:用 `UPDATE ... RETURNING` 抓本次真的被我從非 approved 改成 approved 的 split;**只有在本次確實有改動、且該費用現在所有 split 皆 `approved`** 時回該 expense_id,否則回 NULL。(已 rejected 時照舊 raise `EXPENSE_REJECTED`。)
+- `approve_all_pending()` **RETURNS SETOF uuid**:用 CTE `UPDATE ... RETURNING` 抓本次真的被我改動的 split 所屬 expense,再回其中現在全員通過的 expense_id。
+- `reject_expense(p_expense_id)` **RETURNS boolean**:`UPDATE ... WHERE approval_status <> 'rejected' RETURNING` —— 只有在本次確實從非 rejected 變 rejected(`ROW_COUNT > 0`)才回 `true`;重按/重試回 `false`,action 據此**不重送**通知。
 
 判定「全員通過」:該費用所有 split 皆 `approved`。
 
@@ -59,7 +71,8 @@ CREATE POLICY "push_subscriptions_delete" ON push_subscriptions FOR DELETE TO au
 
 - `push` 事件:解析 payload `{ title, body, url }` → `self.registration.showNotification(title, { body, data: { url } })`
 - `notificationclick` 事件:`clients.openWindow(url)`(或聚焦既有分頁)
-- 靜態檔放 `public/sw.js`,scope `/`。
+- **防 open redirect**:`url` 只接受站內路徑 —— `notificationclick` 內檢查 `url.startsWith('/')` 才開啟,否則退回 `/`。payload 一律由 server 端組站內 path(`/review`、`/trips/${tripId}`),不接受完整 URL。
+- 靜態檔放 `public/sw.js`,scope `/`。**部署後驗證** `/sw.js` 以 `Content-Type: application/javascript` 回應、未被 Next/OpenNext 的 asset routing 攔截(必要時於 `wrangler.toml`/headers 調整)。
 
 ### 啟用流程 — client
 
@@ -88,11 +101,13 @@ CREATE POLICY "push_subscriptions_delete" ON push_subscriptions FOR DELETE TO au
 | 事件 | 觸發點 | 收件人 | url |
 |---|---|---|---|
 | ① 等我審核 | `createExpenseAction` 成功後 | `splits` 的 user_id 排除建立者(= auth.uid()) | `/review` |
-| ② 被拒絕 | `rejectExpenseAction` 成功後 | 該費用 `created_by` | `/trips/{tripId}` |
+| ② 被拒絕 | `rejectExpenseAction`(RPC 回 `true`)後 | 該費用 `created_by` | `/trips/{tripId}` |
 | ③ 全員通過 | `approveExpenseAction`(RPC 回非 null)/ `approveAllPendingAction`(RPC 回的每個 id) | 各該費用 `created_by`(排除操作者) | `/trips/{tripId}` |
 
 - 收件人 id 與顯示文字(標題/付款人/金額)在 action 內組出 `payload`。
-- ②③需要 `created_by` / `title` / `trip_id`:reject 後查該 expense;approve 後針對回傳的 expense_id 查。
+- **事件①**:`create_expense_with_splits` 本就 `RETURNS uuid`,但現在 [`createExpenseAction`](../../../src/lib/actions/expenses.ts) 沒接 `data`。改成接住回傳的 `expense_id`,payload 用正式 id 組標題/URL,而非僅靠 client 傳入的參數。
+- **事件②③去重**:只有 RPC 回報「本次確實改變」時才送(reject 回 `true`、approve 回非 null id),重按/重試不重送。
+- ②③需要 `created_by` / `title` / `trip_id`:reject 確認後查該 expense;approve 針對回傳的 expense_id 查。
 
 ### Secrets / env(部署時設定)
 
@@ -111,7 +126,7 @@ crypto 簽章/加密與實際發送無法單測,略過(整合測試時手動驗�
 
 ## 範圍總結
 
-1 新表 + 2 RPC 改回傳 + `sw.js` + `NotificationToggle` + `NotificationPrompt` + `saveSubscriptionAction`/`deleteSubscriptionAction` + `push.ts`(1 新依賴)+ 3 處 action 接線 + secrets。
+1 新表 + 3 RPC 改回傳(`approve_expense`/`approve_all_pending`/`reject_expense`,先 DROP 再重建,同步 snapshot)+ `createExpenseAction` 接 RPC 回傳 id + `sw.js` + `NotificationToggle` + `NotificationPrompt` + `saveSubscriptionAction`/`deleteSubscriptionAction` + `push.ts`(1 新依賴)+ 3 處 action 接線 + secrets。
 
 ## 不做(YAGNI)
 
