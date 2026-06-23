@@ -30,7 +30,8 @@ CREATE INDEX expense_splits_user_status_idx ON expense_splits (user_id, approval
 ```
 
 - `DEFAULT 'approved'`:現有舊資料全部 grandfather 成已通過,不破壞既有結算。
-- 每個分擔者 = 一筆 split row,各帶自己的審核狀態。
+- **「分擔者」嚴格等於 `expense_splits` 的 row,不是 trip 全員。** 只有被選入分擔的人需要審核;沒被選入的成員不產生 split、不需審核。
+- **0 元 split 也算分擔者**:若建立者把某人選入但分擔 0 元,該人仍有一筆 split,仍需審核(語意上他被列入這筆帳)。建立者自己那筆(`user_id = auth.uid()`)一律 `approved`,不論金額。
 
 ### 費用層級狀態(推導,不存欄位)
 
@@ -59,6 +60,11 @@ trip 費用清單則**不過濾**,全部顯示但帶狀態標籤。
 
 ## RPC(SECURITY DEFINER,沿用現有模式)
 
+> **兩處都要改:** repo 同時有 migration 與 current-state snapshot
+> [`supabase/functions/expense_helpers.sql`](../../../supabase/functions/expense_helpers.sql)。
+> 改 2 個 + 加 3 個 RPC,**migration `0009` 與 `expense_helpers.sql` 兩邊都要更新成一致**。
+> 否則日後重套 helper SQL 會覆蓋回舊版、把審核邏輯洗掉。
+
 ### 修改
 
 - **`create_expense_with_splits`**:插入 splits 時,`user_id = auth.uid()` 那筆設 `approved`,其餘 `pending`。
@@ -69,7 +75,8 @@ trip 費用清單則**不過濾**,全部顯示但帶狀態標籤。
 - **`approve_expense(p_expense_id)`**:把「我」在該費用的 pending split 設為 approved。
   **若該費用已有任何 rejected split → 直接 raise `EXPENSE_REJECTED`**(rejected 是終態,只有建立者編輯才能重審,不允許撤回拒絕)。
 - **`reject_expense(p_expense_id)`**:把「我」那筆設為 rejected(整筆即變 rejected)。
-- **`approve_all_pending()`**:一鍵 — 把我所有 pending split 一次設 approved,**自動跳過任何含 rejected split 的費用**。
+- **`approve_all_pending()`**:一鍵 — 把我所有 pending split 一次設 approved。
+  **跳過已拒絕費用的實作:** `UPDATE expense_splits SET approval_status='approved' WHERE user_id=auth.uid() AND approval_status='pending' AND NOT EXISTS (SELECT 1 FROM expense_splits s2 WHERE s2.expense_id = expense_splits.expense_id AND s2.approval_status='rejected')`。
 
 每個都檢查 `auth.uid()`、只能改自己那筆。
 
