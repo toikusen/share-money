@@ -78,9 +78,14 @@ DROP FUNCTION reject_expense(uuid);
 
 **`NotificationToggle`(設定頁新「通知」區塊)**
 - 偵測支援度(`'serviceWorker' in navigator && 'PushManager' in window`)。不支援 → 顯示提示(iOS 需先加入主畫面)。
-- 「開啟通知」:`register('/sw.js')` → `Notification.requestPermission()` → `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: <NEXT_PUBLIC_VAPID_PUBLIC_KEY> })` → 把訂閱(endpoint/keys)交給 `saveSubscriptionAction` upsert。
+- 「開啟通知」:**先 `Notification.requestPermission()`**(點擊後立刻呼叫,避免中間 `await register` 把使用者手勢消耗掉,部分瀏覽器會因此判定非手勢而拒絕)→ 權限 granted 後 `register('/sw.js')` → `pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: <NEXT_PUBLIC_VAPID_PUBLIC_KEY> })` → 把訂閱(endpoint/keys)交給 `saveSubscriptionAction`。
 - 「關閉通知」:`subscription.unsubscribe()` + `deleteSubscriptionAction`(刪該 endpoint 列)。
 - 顯示目前狀態(已開啟 / 未開啟 / 已被瀏覽器封鎖)。
+
+**帳號切換 / endpoint 歸屬**
+`endpoint` 是 UNIQUE,同一瀏覽器登出 A 再登入 B 時,舊 endpoint 仍屬於 A,B 用一般 authenticated client upsert 會被 RLS(`user_id = auth.uid()`)擋下,且 A 的通知還留在這台裝置。處理:
+- `saveSubscriptionAction` 改用 **service role** 依目前登入者重新歸屬 endpoint(`upsert on conflict (endpoint)` 把 `user_id` 設為目前使用者),不靠一般 RLS upsert。(故 `push_subscriptions_update` policy 主要供使用者自助管理用,正常訂閱寫入走 service role。)
+- 另在 **登出流程**([SignOutButton](../../../src/components/settings/SignOutButton.tsx))先嘗試 `unsubscribe()` + `deleteSubscriptionAction`,清掉本機殘留訂閱再登出。
 
 **自動啟用提示 — `NotificationPrompt`(放 `(app)/layout.tsx`)**
 - 出現條件:支援推播 **且** `Notification.permission === 'default'` **且** 未被本機關閉過(`localStorage['push-prompt-dismissed']` 未設)。
