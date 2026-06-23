@@ -16,6 +16,7 @@ type Props = {
     currency: Currency
     paid_by: string
     paid_at: string
+    note: string | null
     splits: SplitInput[]
   }
 }
@@ -48,6 +49,7 @@ export function EditExpenseButton({ tripId, members, currentUserId, expense }: P
             currency: expense.currency,
             paidBy: expense.paid_by,
             paidAt: expense.paid_at,
+            note: expense.note ?? '',
             splits: expense.splits,
           }}
           onSubmit={values => updateExpenseAction({ expenseId: expense.id, tripId, ...values })}

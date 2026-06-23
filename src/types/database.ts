@@ -33,6 +33,7 @@ export type Expense = {
   paid_by: string
   created_by: string
   paid_at: string
+  note: string | null
   created_at: string
 }
 
@@ -65,6 +66,7 @@ export type ExpenseDiff = {
   currency?: Currency
   paid_by?: string
   paid_at?: string
+  note?: string | null
   splits?: SplitInput[]
 }
 

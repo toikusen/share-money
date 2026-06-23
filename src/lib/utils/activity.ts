@@ -43,6 +43,8 @@ function expenseChanges(
     parts.push(`付款人從 ${nameOf(prev.paid_by)} 改為 ${nameOf(next.paid_by!)}`)
   if (prev.paid_at !== undefined)
     parts.push(`付款時間從 ${formatExpenseDateTime(prev.paid_at)} 改為 ${formatExpenseDateTime(next.paid_at!)}`)
+  if (prev.note !== undefined)
+    parts.push(next.note ? '更新了備註' : '移除了備註')
   if (prev.splits !== undefined)
     parts.push('調整了分擔方式')
   return parts
