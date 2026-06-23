@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { DisplayNameForm } from '@/components/settings/DisplayNameForm'
 import { SignOutButton } from '@/components/settings/SignOutButton'
+import { NotificationToggle } from '@/components/notifications/NotificationToggle'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
@@ -44,6 +45,14 @@ export default async function SettingsPage() {
           <p className="text-xs font-semibold text-ink-3 mb-2 px-1">顯示名稱</p>
           <div className="bg-white rounded-2xl shadow-card p-5">
             <DisplayNameForm initialName={profile.display_name} />
+          </div>
+        </section>
+
+        {/* Notifications */}
+        <section>
+          <p className="text-xs font-semibold text-ink-3 mb-2 px-1">通知</p>
+          <div className="bg-white rounded-2xl shadow-card p-5">
+            <NotificationToggle />
           </div>
         </section>
 
