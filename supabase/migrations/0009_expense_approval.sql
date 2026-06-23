@@ -9,10 +9,10 @@
 
 -- DEFAULT 'approved' grandfathers all existing rows so past settlements are
 -- unaffected. New splits set the value explicitly in the RPCs below.
-ALTER TABLE expense_splits ADD COLUMN approval_status text NOT NULL
+ALTER TABLE expense_splits ADD COLUMN IF NOT EXISTS approval_status text NOT NULL
   DEFAULT 'approved' CHECK (approval_status IN ('pending', 'approved', 'rejected'));
 
-CREATE INDEX expense_splits_user_status_idx ON expense_splits (user_id, approval_status);
+CREATE INDEX IF NOT EXISTS expense_splits_user_status_idx ON expense_splits (user_id, approval_status);
 
 -- ============================================================
 -- REALTIME
