@@ -28,6 +28,7 @@ export function NotificationPrompt() {
     try { await enablePush() } finally {
       localStorage.setItem(DISMISS_KEY, '1')
       setShow(false)
+      setBusy(false)
     }
   }
 
