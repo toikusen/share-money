@@ -98,15 +98,15 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
     return () => window.removeEventListener('sm:open-day', onOpenDay)
   }, [todayDate])
 
-  // 當日小計:全是 JPY 顯示 ¥,混幣別退回換算後的 NT$
+  // 當日小計:同一幣別顯示原幣,混幣別退回換算後的 NT$
   function groupSum(items: ExpenseDisplayRow[]) {
-    const allJPY = items.every(e => e.currency === 'JPY')
-    if (allJPY) {
+    const uniform = items.length > 0 && items.every(e => e.currency === items[0].currency)
+    if (uniform) {
       const sum = items.reduce((a, e) => a + e.amount, 0)
-      return `¥${Math.round(sum).toLocaleString('zh-TW')}`
+      return formatAmount(sum, items[0].currency)
     }
     const sum = items.reduce((a, e) => a + convertToTWD(e.amount, e.currency, exchangeRate), 0)
-    return `≈NT$${Math.round(sum).toLocaleString('zh-TW')}`
+    return `≈${formatAmount(sum, 'TWD')}`
   }
 
   return (

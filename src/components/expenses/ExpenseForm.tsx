@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect, useRef } from 'react'
-import { splitEqually, isEqualSplit, splitWithRemainder, formatAmount } from '@/lib/utils/currency'
+import { splitEqually, isEqualSplit, splitWithRemainder, formatAmount, CURRENCIES } from '@/lib/utils/currency'
 import type { Profile, Currency, SplitInput } from '@/types/database'
 
 export type ExpenseFormValues = {
@@ -204,7 +204,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
             <input
               id="ef-amount"
               value={amount} onChange={e => setAmount(e.target.value)}
-              type="number" min="0" step={currency === 'JPY' ? '1' : '0.01'} required
+              type="number" min="0" step={CURRENCIES[currency].decimals === 0 ? '1' : '0.01'} required
               className={`${inputClass} font-mono tabular-nums`}
             />
           </div>
@@ -316,7 +316,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
                         </button>
                       )}
                       <input
-                        type="number" min="0" step={currency === 'JPY' ? '1' : '0.01'}
+                        type="number" min="0" step={CURRENCIES[currency].decimals === 0 ? '1' : '0.01'}
                         value={rawCustom ?? ''}
                         onChange={e => setCustomAmounts(prev => ({ ...prev, [m.id]: e.target.value }))}
                         disabled={!checked}
