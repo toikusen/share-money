@@ -88,6 +88,27 @@ export async function updateExchangeRateAction(tripId: string, rate: number) {
   return { success: true }
 }
 
+/** Switch a trip's foreign currency + rate. Server rejects if the trip already has expenses. */
+export async function updateTripCurrencyAction(tripId: string, currency: string, rate: number) {
+  if (!(FOREIGN_CURRENCIES as readonly string[]).includes(currency)) return { error: '請選擇有效外幣' }
+  if (!(rate > 0)) return { error: '匯率必須大於 0' }
+
+  const supabase = await createClient()
+  const { error } = await supabase.rpc('update_trip_currency', {
+    p_trip_id: tripId,
+    p_foreign_currency: currency,
+    p_rate: rate,
+  })
+  if (error) {
+    if (error.message.includes('HAS_EXPENSES')) return { error: '已有費用，無法變更幣別' }
+    return { error: error.message }
+  }
+  revalidatePath(`/trips/${tripId}`)
+  revalidatePath(`/trips/${tripId}/balance`)
+  revalidatePath('/trips')
+  return { success: true }
+}
+
 export async function deleteTripAction(tripId: string): Promise<void> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

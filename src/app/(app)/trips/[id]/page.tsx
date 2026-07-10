@@ -4,7 +4,9 @@ import { AddExpenseModal } from '@/components/expenses/AddExpenseModal'
 import { ExpenseList, type ExpenseDisplayRow } from '@/components/expenses/ExpenseList'
 import { DailySpendChart } from '@/components/expenses/DailySpendChart'
 import { InviteCard } from '@/components/trips/InviteCard'
-import { deleteTripAction, updateExchangeRateAction } from '@/lib/actions/trips'
+import { deleteTripAction, updateExchangeRateAction, fetchForeignRates } from '@/lib/actions/trips'
+import { TripCurrencyEditor } from '@/components/trips/TripCurrencyEditor'
+import type { ForeignCurrency } from '@/types/database'
 import { getRequestSiteUrl } from '@/lib/site-url'
 import { DeleteTripButton } from '@/components/trips/DeleteTripButton'
 import { EditTripInfoButton } from '@/components/trips/EditTripInfoButton'
@@ -61,6 +63,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   }
 
   const expenseRows = (expenses ?? []) as unknown as ExpenseDisplayRow[]
+  // Currency is only switchable before any expense exists; fetch live rates just for that case.
+  const foreignRates = expenseRows.length === 0 ? await fetchForeignRates() : null
   const inviteUrl = `${siteUrl}/join/${trip.invite_token}`
   const canDeleteTrip = trip.created_by === user!.id
 
@@ -163,19 +167,28 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         <InviteCard inviteUrl={inviteUrl} />
       </div>
 
-      {/* 匯率(安靜的工具列) */}
-      <form action={updateRate} className="flex items-center gap-1.5 text-xs text-ink-3 mt-3">
-        <span>匯率 1 {trip.foreign_currency} =</span>
-        <input
-          name="rate"
-          type="number"
-          step="0.0001"
-          defaultValue={trip.exchange_rate}
-          className="w-20 bg-fill border-0 rounded-md px-2 py-1 text-xs text-ink text-right font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/35"
+      {/* 匯率(安靜的工具列)。無費用時可連幣別一起改；有費用後幣別鎖定，只改匯率。 */}
+      {foreignRates ? (
+        <TripCurrencyEditor
+          tripId={id}
+          currency={trip.foreign_currency as ForeignCurrency}
+          rate={trip.exchange_rate}
+          rates={foreignRates}
         />
-        <span>TWD</span>
-        <button type="submit" className="ml-1 text-accent hover:text-accent-deep text-xs font-medium transition-colors">更新</button>
-      </form>
+      ) : (
+        <form action={updateRate} className="flex items-center gap-1.5 text-xs text-ink-3 mt-3">
+          <span>匯率 1 {trip.foreign_currency} =</span>
+          <input
+            name="rate"
+            type="number"
+            step="0.0001"
+            defaultValue={trip.exchange_rate}
+            className="w-20 bg-fill border-0 rounded-md px-2 py-1 text-xs text-ink text-right font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/35"
+          />
+          <span>TWD</span>
+          <button type="submit" className="ml-1 text-accent hover:text-accent-deep text-xs font-medium transition-colors">更新</button>
+        </form>
+      )}
 
       {/* Expenses */}
       <section className="mt-7">
