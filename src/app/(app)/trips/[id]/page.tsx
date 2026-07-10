@@ -165,7 +165,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
       {/* 匯率(安靜的工具列) */}
       <form action={updateRate} className="flex items-center gap-1.5 text-xs text-ink-3 mt-3">
-        <span>匯率 1 JPY =</span>
+        <span>匯率 1 {trip.foreign_currency} =</span>
         <input
           name="rate"
           type="number"

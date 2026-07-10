@@ -14,7 +14,8 @@ const RPC_ERROR_MESSAGES: Record<string, string> = {
   PAID_BY_NOT_MEMBER: '付款人不是行程成員',
   SPLIT_USER_NOT_MEMBER: '分擔成員中有非行程成員',
   SPLIT_SUM_MISMATCH: '分擔金額總和不等於費用金額',
-  JPY_SPLIT_NOT_INTEGER: 'JPY 金額必須為整數',
+  SPLIT_NOT_INTEGER: '此幣別金額必須為整數',
+  INVALID_CURRENCY: '幣別與此行程不符',
   PAID_AT_REQUIRED: '請選擇付款時間',
   EXPENSE_REJECTED: '此費用已被拒絕,請等建立者修改後再審核',
 }

@@ -18,7 +18,7 @@ export function TripCard({ trip }: { trip: Trip; currentUserId: string }) {
               <span aria-hidden="true"> · </span>
             </>
           )}
-          1 JPY = {trip.exchange_rate} TWD
+          1 {trip.foreign_currency} = {trip.exchange_rate} TWD
         </div>
       </div>
       <span className="text-ink-4 shrink-0" aria-hidden="true">›</span>

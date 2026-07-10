@@ -193,7 +193,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
               <PaidVsShareChart rows={chartRows} />
               <div className="h-px bg-line my-3" />
               <p className="text-[11.5px] text-ink-4">
-                行程總費用 {twd(totalTWD)} · {profileMap.size} 位成員 · 1 JPY = {trip.exchange_rate} TWD
+                行程總費用 {twd(totalTWD)} · {profileMap.size} 位成員 · 1 {trip.foreign_currency} = {trip.exchange_rate} TWD
               </p>
             </CalcDisclosure>
           </section>
