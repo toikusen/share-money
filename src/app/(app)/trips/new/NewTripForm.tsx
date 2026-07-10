@@ -4,18 +4,18 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { CURRENCIES, FOREIGN_CURRENCIES } from '@/lib/utils/currency'
 import { createTripAction } from '@/lib/actions/trips'
-import type { Currency } from '@/types/database'
+import type { ForeignCurrency } from '@/types/database'
 
 const inputClass =
   'w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-accent/35'
 
-type Props = { rates: Record<Currency, number | null> }
+type Props = { rates: Record<ForeignCurrency, number | null> }
 
 export function NewTripForm({ rates }: Props) {
-  const [currency, setCurrency] = useState<Currency>('JPY')
+  const [currency, setCurrency] = useState<ForeignCurrency>('JPY')
   const [rate, setRate] = useState<string>(rates['JPY'] != null ? String(rates['JPY']) : '')
 
-  function onCurrencyChange(next: Currency) {
+  function onCurrencyChange(next: ForeignCurrency) {
     setCurrency(next)
     const live = rates[next]
     setRate(live != null ? String(live) : '')
@@ -60,7 +60,7 @@ export function NewTripForm({ rates }: Props) {
             id="new-trip-currency"
             name="foreign_currency"
             value={currency}
-            onChange={e => onCurrencyChange(e.target.value as Currency)}
+            onChange={e => onCurrencyChange(e.target.value as ForeignCurrency)}
             className="w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
           >
             {FOREIGN_CURRENCIES.map(c => (

@@ -1,5 +1,8 @@
 export type Currency = 'JPY' | 'KRW' | 'VND' | 'USD' | 'HKD' | 'CNY' | 'EUR' | 'THB' | 'GBP' | 'TWD'
 
+/** Any currency a trip can use as its foreign currency — everything except the home currency TWD. */
+export type ForeignCurrency = Exclude<Currency, 'TWD'>
+
 export type Profile = {
   id: string
   display_name: string

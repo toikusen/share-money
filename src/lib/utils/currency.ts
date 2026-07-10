@@ -1,4 +1,4 @@
-import type { Currency } from '@/types/database'
+import type { Currency, ForeignCurrency } from '@/types/database'
 
 export const CURRENCIES: Record<Currency, { label: string; symbol: string; decimals: number }> = {
   JPY: { label: '日圓', symbol: '¥', decimals: 0 },
@@ -13,7 +13,8 @@ export const CURRENCIES: Record<Currency, { label: string; symbol: string; decim
   TWD: { label: '台幣', symbol: 'NT$', decimals: 2 },
 }
 
-export const FOREIGN_CURRENCIES = (Object.keys(CURRENCIES) as Currency[]).filter(c => c !== 'TWD')
+export const FOREIGN_CURRENCIES: ForeignCurrency[] =
+  (Object.keys(CURRENCIES) as Currency[]).filter((c): c is ForeignCurrency => c !== 'TWD')
 
 /** 從 USD 基準匯率表算出 外幣→TWD 匯率；家用幣或缺資料回傳 null。 */
 export function foreignToTwdRate(usdRates: Record<string, number>, currency: Currency): number | null {
@@ -61,8 +62,8 @@ export type HybridSplitResult = {
 
 /**
  * Hybrid split: members with a custom amount pay exactly that; members with
- * `custom: null` share the remaining total equally (JPY/TWD rounding rules
- * follow splitEqually). Invalid when custom amounts exceed the total, or when
+ * `custom: null` share the remaining total equally (zero-decimal vs 2-decimal
+ * rounding follows splitEqually). Invalid when custom amounts exceed the total, or when
  * everyone is custom and the sum doesn't match the total.
  */
 export function splitWithRemainder(

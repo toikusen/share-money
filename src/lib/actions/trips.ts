@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { foreignToTwdRate, FOREIGN_CURRENCIES } from '@/lib/utils/currency'
-import type { Currency } from '@/types/database'
+import type { ForeignCurrency } from '@/types/database'
 
 export async function createTripAction(formData: FormData) {
   const name = formData.get('name') as string
@@ -57,10 +57,10 @@ export async function updateTripInfoAction(tripId: string, formData: FormData) {
 }
 
 /** 抓 USD 基準匯率表，回傳每個外幣→TWD 匯率（抓不到為 null）。 */
-export async function fetchForeignRates(): Promise<Record<Currency, number | null>> {
+export async function fetchForeignRates(): Promise<Record<ForeignCurrency, number | null>> {
   const empty = Object.fromEntries(
     FOREIGN_CURRENCIES.map(c => [c, null]),
-  ) as Record<Currency, number | null>
+  ) as Record<ForeignCurrency, number | null>
   try {
     const res = await fetch('https://tw.rter.info/capi.php', { next: { revalidate: 3600 } })
     const json = (await res.json()) as Record<string, { Exrate: number }>
@@ -69,7 +69,7 @@ export async function fetchForeignRates(): Promise<Record<Currency, number | nul
     ) as Record<string, number>
     return Object.fromEntries(
       FOREIGN_CURRENCIES.map(c => [c, foreignToTwdRate(usdRates, c)]),
-    ) as Record<Currency, number | null>
+    ) as Record<ForeignCurrency, number | null>
   } catch {
     return empty
   }
