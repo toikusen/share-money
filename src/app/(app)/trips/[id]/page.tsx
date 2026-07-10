@@ -195,7 +195,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
                 <path d="M12 7v5l3 2" />
               </svg>
             </Link>
-            <AddExpenseModal tripId={id} members={members} currentUserId={user!.id} compact />
+            <AddExpenseModal tripId={id} members={members} currentUserId={user!.id} foreignCurrency={trip.foreign_currency} compact />
           </div>
         </div>
         {expenseRows.length === 0 && (
@@ -207,6 +207,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           members={members}
           currentUserId={user!.id}
           exchangeRate={trip.exchange_rate}
+          foreignCurrency={trip.foreign_currency}
         />
       </section>
     </main>

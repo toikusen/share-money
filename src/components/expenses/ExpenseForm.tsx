@@ -20,6 +20,7 @@ type Props = {
   pendingLabel: string
   members: Profile[]
   currentUserId: string
+  foreignCurrency: Currency
   initial?: ExpenseFormValues
   onSubmit: (values: ExpenseFormValues) => Promise<{ error?: string; success?: boolean } | undefined>
   onClose: () => void
@@ -36,13 +37,13 @@ function toDateTimeLocalValue(value?: string) {
 const inputClass =
   'w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-accent/35'
 
-export function ExpenseForm({ heading, submitLabel, pendingLabel, members, currentUserId, initial, onSubmit, onClose }: Props) {
+export function ExpenseForm({ heading, submitLabel, pendingLabel, members, currentUserId, foreignCurrency, initial, onSubmit, onClose }: Props) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
   const [title, setTitle] = useState(initial?.title ?? '')
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
-  const [currency, setCurrency] = useState<Currency>(initial?.currency ?? 'JPY')
+  const [currency, setCurrency] = useState<Currency>(initial?.currency ?? foreignCurrency)
   const [paidBy, setPaidBy] = useState(initial?.paidBy ?? currentUserId)
   const [paidAt, setPaidAt] = useState(() => toDateTimeLocalValue(initial?.paidAt))
   const [note, setNote] = useState(initial?.note ?? '')
@@ -214,7 +215,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
               value={currency} onChange={e => setCurrency(e.target.value as Currency)}
               className="bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
             >
-              <option value="JPY">JPY</option>
+              <option value={foreignCurrency}>{foreignCurrency}</option>
               <option value="TWD">TWD</option>
             </select>
           </div>

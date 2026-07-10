@@ -3,16 +3,17 @@
 import { useState } from 'react'
 import { createExpenseAction } from '@/lib/actions/expenses'
 import { ExpenseForm } from './ExpenseForm'
-import type { Profile } from '@/types/database'
+import type { Profile, Currency } from '@/types/database'
 
 type Props = {
   tripId: string
   members: Profile[]
   currentUserId: string
+  foreignCurrency: Currency
   compact?: boolean
 }
 
-export function AddExpenseModal({ tripId, members, currentUserId, compact }: Props) {
+export function AddExpenseModal({ tripId, members, currentUserId, foreignCurrency, compact }: Props) {
   const [open, setOpen] = useState(false)
 
   if (!open) {
@@ -43,6 +44,7 @@ export function AddExpenseModal({ tripId, members, currentUserId, compact }: Pro
       pendingLabel="新增中..."
       members={members}
       currentUserId={currentUserId}
+      foreignCurrency={foreignCurrency}
       onSubmit={values => createExpenseAction({ tripId, ...values })}
       onClose={() => setOpen(false)}
     />

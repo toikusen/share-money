@@ -40,12 +40,13 @@ type Props = {
   members: MemberProfile[]
   currentUserId: string
   exchangeRate: number
+  foreignCurrency: Currency
 }
 
 // Device time zone never changes within a session; nothing to subscribe to.
 const subscribeNoop = () => () => {}
 
-export function ExpenseList({ tripId, expenses, members, currentUserId, exchangeRate }: Props) {
+export function ExpenseList({ tripId, expenses, members, currentUserId, exchangeRate, foreignCurrency }: Props) {
   // Server render falls back to Asia/Taipei (undefined); after hydration we
   // re-group and re-format in the viewer's device time zone so times match
   // what they typed.
@@ -189,6 +190,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                           tripId={tripId}
                           members={members}
                           currentUserId={currentUserId}
+                          foreignCurrency={foreignCurrency}
                           expense={{
                             id: expense.id,
                             title: expense.title,

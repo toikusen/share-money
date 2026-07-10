@@ -9,6 +9,7 @@ type Props = {
   tripId: string
   members: Profile[]
   currentUserId: string
+  foreignCurrency: Currency
   expense: {
     id: string
     title: string
@@ -21,7 +22,7 @@ type Props = {
   }
 }
 
-export function EditExpenseButton({ tripId, members, currentUserId, expense }: Props) {
+export function EditExpenseButton({ tripId, members, currentUserId, foreignCurrency, expense }: Props) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -43,6 +44,7 @@ export function EditExpenseButton({ tripId, members, currentUserId, expense }: P
           pendingLabel="儲存中..."
           members={members}
           currentUserId={currentUserId}
+          foreignCurrency={foreignCurrency}
           initial={{
             title: expense.title,
             amount: expense.amount,
