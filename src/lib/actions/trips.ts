@@ -4,6 +4,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { foreignToTwdRate, FOREIGN_CURRENCIES } from '@/lib/utils/currency'
+import type { Currency } from '@/types/database'
 
 export async function createTripAction(formData: FormData) {
   const name = formData.get('name') as string
@@ -15,10 +17,16 @@ export async function createTripAction(formData: FormData) {
   if (!name?.trim()) return { error: '請輸入行程名稱' }
   if (isNaN(exchangeRate) || exchangeRate <= 0) return { error: '請輸入有效匯率' }
 
+  const foreignCurrency = formData.get('foreign_currency') as string
+  if (!(FOREIGN_CURRENCIES as readonly string[]).includes(foreignCurrency)) {
+    return { error: '請選擇有效外幣' }
+  }
+
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('create_trip', {
     p_name: name.trim(),
     p_exchange_rate: exchangeRate,
+    p_foreign_currency: foreignCurrency,
     ...(startDate ? { p_start_date: startDate } : {}),
     ...(endDate ? { p_end_date: endDate } : {}),
   })
@@ -48,18 +56,22 @@ export async function updateTripInfoAction(tripId: string, formData: FormData) {
   return { success: true }
 }
 
-export async function fetchExchangeRate(): Promise<number | null> {
+/** 抓 USD 基準匯率表，回傳每個外幣→TWD 匯率（抓不到為 null）。 */
+export async function fetchForeignRates(): Promise<Record<Currency, number | null>> {
+  const empty = Object.fromEntries(
+    FOREIGN_CURRENCIES.map(c => [c, null]),
+  ) as Record<Currency, number | null>
   try {
-    const res = await fetch('https://tw.rter.info/capi.php', {
-      next: { revalidate: 3600 },
-    })
-    const json = await res.json()
-    const usdJpy: number = json['USDJPY']?.Exrate
-    const usdTwd: number = json['USDTWD']?.Exrate
-    if (!usdJpy || !usdTwd) return null
-    return Math.round((usdTwd / usdJpy) * 10000) / 10000
+    const res = await fetch('https://tw.rter.info/capi.php', { next: { revalidate: 3600 } })
+    const json = (await res.json()) as Record<string, { Exrate: number }>
+    const usdRates = Object.fromEntries(
+      Object.entries(json).map(([k, v]) => [k, v?.Exrate]),
+    ) as Record<string, number>
+    return Object.fromEntries(
+      FOREIGN_CURRENCIES.map(c => [c, foreignToTwdRate(usdRates, c)]),
+    ) as Record<Currency, number | null>
   } catch {
-    return null
+    return empty
   }
 }
 
