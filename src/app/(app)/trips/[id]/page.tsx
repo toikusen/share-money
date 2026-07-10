@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { AddExpenseModal } from '@/components/expenses/AddExpenseModal'
 import { ExpenseList, type ExpenseDisplayRow } from '@/components/expenses/ExpenseList'
@@ -18,19 +18,35 @@ type MemberProfile = { id: string; display_name: string; avatar_url: string | nu
 export default async function TripPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: trip, error: tripError } = await supabase.from('trips').select('*').eq('id', id).single()
+  // All reads are independent (RLS authorizes each) — run them in one round trip's time
+  const [
+    user,
+    siteUrl,
+    { data: trip, error: tripError },
+    { data: memberships, error: membershipsError },
+    { data: expenses, error: expensesError },
+  ] = await Promise.all([
+    getAuthUser(),
+    getRequestSiteUrl(),
+    supabase.from('trips').select('*').eq('id', id).single(),
+    supabase
+      .from('trip_members')
+      .select('user_id, profiles(id, display_name, avatar_url, created_at)')
+      .eq('trip_id', id),
+    supabase
+      .from('expenses')
+      .select('*, expense_splits(*), payer:profiles!paid_by(id, display_name, avatar_url, created_at)')
+      .eq('trip_id', id)
+      .order('paid_at', { ascending: false })
+      .order('created_at', { ascending: false }),
+  ])
+
   if (tripError && tripError.code !== 'PGRST116') {
     console.error('Failed to load trip', { tripId: id, error: tripError })
     throw new Error('無法載入行程')
   }
   if (!trip) notFound()
-
-  const { data: memberships, error: membershipsError } = await supabase
-    .from('trip_members')
-    .select('user_id, profiles(id, display_name, avatar_url, created_at)')
-    .eq('trip_id', id)
 
   if (membershipsError) {
     console.error('Failed to load trip members', { tripId: id, error: membershipsError })
@@ -39,20 +55,13 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   const members = (memberships?.map(m => m.profiles).filter(Boolean) ?? []) as unknown as MemberProfile[]
 
-  const { data: expenses, error: expensesError } = await supabase
-    .from('expenses')
-    .select('*, expense_splits(*), payer:profiles!paid_by(id, display_name, avatar_url, created_at)')
-    .eq('trip_id', id)
-    .order('paid_at', { ascending: false })
-    .order('created_at', { ascending: false })
-
   if (expensesError) {
     console.error('Failed to load trip expenses', { tripId: id, error: expensesError })
     throw new Error('無法載入費用明細')
   }
 
   const expenseRows = (expenses ?? []) as unknown as ExpenseDisplayRow[]
-  const inviteUrl = `${await getRequestSiteUrl()}/join/${trip.invite_token}`
+  const inviteUrl = `${siteUrl}/join/${trip.invite_token}`
   const canDeleteTrip = trip.created_by === user!.id
 
   // 你的目前淨額 — 結算入口直接預告答案。只計入全員審核通過的費用。

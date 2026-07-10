@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { TripCard } from '@/components/trips/TripCard'
 import { getPendingReviews } from '@/lib/reviews'
 import { redirect } from 'next/navigation'
@@ -6,28 +6,19 @@ import Link from 'next/link'
 
 export default async function TripsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
-  const reviewCount = (await getPendingReviews()).length
-
-  const { data: memberships, error: membershipsError } = await supabase
-    .from('trip_members')
-    .select('trip_id')
-    .eq('user_id', user!.id)
-
-  if (membershipsError) {
-    console.error('Failed to load trip memberships', membershipsError)
-    throw new Error('無法載入行程清單')
-  }
-
-  const tripIds = memberships?.map(m => m.trip_id) ?? []
-
-  const { data: trips, error: tripsError } = await supabase
-    .from('trips')
-    .select('*')
-    .in('id', tripIds.length > 0 ? tripIds : ['00000000-0000-0000-0000-000000000000'])
-    .order('created_at', { ascending: false })
+  // Single round trip: trips joined through my membership, in parallel with reviews
+  const [pendingReviews, { data: trips, error: tripsError }] = await Promise.all([
+    getPendingReviews(),
+    supabase
+      .from('trips')
+      .select('*, trip_members!inner(user_id)')
+      .eq('trip_members.user_id', user.id)
+      .order('created_at', { ascending: false }),
+  ])
+  const reviewCount = pendingReviews.length
 
   if (tripsError) {
     console.error('Failed to load trips', tripsError)

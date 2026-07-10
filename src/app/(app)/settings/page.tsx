@@ -1,13 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { DisplayNameForm } from '@/components/settings/DisplayNameForm'
 import { SignOutButton } from '@/components/settings/SignOutButton'
+import { DeleteAccountButton } from '@/components/settings/DeleteAccountButton'
 import { NotificationToggle } from '@/components/notifications/NotificationToggle'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) redirect('/login')
 
   const { data: profile, error } = await supabase
@@ -69,6 +70,20 @@ export default async function SettingsPage() {
             <SignOutButton />
           </div>
         </section>
+
+        {/* Danger zone */}
+        <section>
+          <p className="text-xs font-semibold text-ink-3 mb-2 px-1">危險區域</p>
+          <div className="bg-white rounded-2xl shadow-card p-4">
+            <DeleteAccountButton />
+          </div>
+        </section>
+
+        <p className="text-center text-xs text-ink-3">
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-ink-2">
+            隱私政策
+          </Link>
+        </p>
       </div>
     </main>
   )

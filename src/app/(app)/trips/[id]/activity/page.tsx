@@ -25,17 +25,23 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: trip, error: tripError } = await supabase.from('trips').select('id, name').eq('id', id).single()
+  const [{ data: trip, error: tripError }, { data: memberships, error: membershipsError }, { data: logs, error: logsError }] =
+    await Promise.all([
+      supabase.from('trips').select('id, name').eq('id', id).single(),
+      supabase.from('trip_members').select('user_id, profiles(id, display_name)').eq('trip_id', id),
+      supabase
+        .from('activity_logs')
+        .select('id, action, details, created_at, actor:profiles!actor_id(display_name)')
+        .eq('trip_id', id)
+        .order('created_at', { ascending: false })
+        .limit(50),
+    ])
+
   if (tripError && tripError.code !== 'PGRST116') {
     console.error('Failed to load trip for activity', { tripId: id, error: tripError })
     throw new Error('無法載入行程')
   }
   if (!trip) notFound()
-
-  const { data: memberships, error: membershipsError } = await supabase
-    .from('trip_members')
-    .select('user_id, profiles(id, display_name)')
-    .eq('trip_id', id)
 
   if (membershipsError) {
     console.error('Failed to load trip members for activity', { tripId: id, error: membershipsError })
@@ -49,13 +55,6 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
     }) ?? []
   )
   const nameOf = (userId: string) => profileMap.get(userId) ?? '未知成員'
-
-  const { data: logs, error: logsError } = await supabase
-    .from('activity_logs')
-    .select('id, action, details, created_at, actor:profiles!actor_id(display_name)')
-    .eq('trip_id', id)
-    .order('created_at', { ascending: false })
-    .limit(50)
 
   if (logsError) {
     console.error('Failed to load activity logs', { tripId: id, error: logsError })

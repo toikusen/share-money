@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { calculateMemberStats, minimizeTransfers } from '@/lib/utils/balance'
 import { approvedExpenseIds } from '@/lib/utils/expenses'
@@ -19,20 +19,24 @@ const twd = (n: number) => `NT$${Math.round(Math.abs(n)).toLocaleString('zh-TW')
 export default async function BalancePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+
+  const [user, { data: trip, error: tripError }, { data: memberships, error: membershipsError }, { data: expenseRecords, error: expensesError }] =
+    await Promise.all([
+      getAuthUser(),
+      supabase.from('trips').select('*').eq('id', id).single(),
+      supabase.from('trip_members').select('user_id, profiles(id, display_name)').eq('trip_id', id),
+      supabase
+        .from('expenses')
+        .select('id, amount, currency, paid_by, expense_splits(expense_id, user_id, amount, approval_status)')
+        .eq('trip_id', id),
+    ])
   const meId = user!.id
 
-  const { data: trip, error: tripError } = await supabase.from('trips').select('*').eq('id', id).single()
   if (tripError && tripError.code !== 'PGRST116') {
     console.error('Failed to load trip for balance', { tripId: id, error: tripError })
     throw new Error('無法載入行程')
   }
   if (!trip) notFound()
-
-  const { data: memberships, error: membershipsError } = await supabase
-    .from('trip_members')
-    .select('user_id, profiles(id, display_name)')
-    .eq('trip_id', id)
 
   if (membershipsError) {
     console.error('Failed to load trip members for balance', { tripId: id, error: membershipsError })
@@ -47,25 +51,13 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   )
   const nameOf = (userId: string) => profileMap.get(userId) ?? '未知成員'
 
-  const { data: expenses, error: expensesError } = await supabase
-    .from('expenses')
-    .select('id, amount, currency, paid_by')
-    .eq('trip_id', id)
-
   if (expensesError) {
     console.error('Failed to load expenses for balance', { tripId: id, error: expensesError })
     throw new Error('無法載入費用明細')
   }
 
-  const { data: splits, error: splitsError } = await supabase
-    .from('expense_splits')
-    .select('expense_id, user_id, amount, approval_status')
-    .in('expense_id', expenses?.map(e => e.id) ?? [])
-
-  if (splitsError) {
-    console.error('Failed to load expense splits for balance', { tripId: id, error: splitsError })
-    throw new Error('無法載入分帳明細')
-  }
+  const expenses = expenseRecords ?? []
+  const splits = expenses.flatMap(e => e.expense_splits ?? [])
 
   // Only fully-approved expenses settle; pending/rejected are excluded everywhere below.
   const approvedIds = approvedExpenseIds((splits ?? []) as { expense_id: string; approval_status: 'pending' | 'approved' | 'rejected' }[])

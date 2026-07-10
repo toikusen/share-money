@@ -1,4 +1,5 @@
 // src/lib/supabase/server.ts
+import { cache } from 'react'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
@@ -21,3 +22,13 @@ export async function createClient() {
     }
   )
 }
+
+/**
+ * Request-deduped auth lookup: layout, page and shared loaders all await the
+ * same single round trip to Supabase Auth instead of one each.
+ */
+export const getAuthUser = cache(async () => {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  return user
+})

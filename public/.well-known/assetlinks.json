@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.tuyucheng.sharemoney",
+      "sha256_cert_fingerprints": [
+        "REPLACE_WITH_PLAY_APP_SIGNING_SHA256",
+        "0F:FE:2C:B7:B4:39:78:BF:E1:4B:A9:F6:5B:B1:C5:92:6A:7C:70:25:D2:EC:01:11:CF:D8:3A:D2:62:46:E6:C0"
+      ]
+    }
+  }
+]

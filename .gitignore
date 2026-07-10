@@ -50,3 +50,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Android TWA (keep only twa-manifest.json; bubblewrap regenerates the rest)
+android-twa/*
+!android-twa/twa-manifest.json

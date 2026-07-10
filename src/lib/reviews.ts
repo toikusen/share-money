@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { isExpenseRejected, approvalProgress } from '@/lib/utils/expenses'
 import type { Currency } from '@/types/database'
 
@@ -39,7 +39,7 @@ type Row = {
  */
 export async function getPendingReviews(): Promise<PendingReview[]> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser()
   if (!user) return []
 
   const { data, error } = await supabase
