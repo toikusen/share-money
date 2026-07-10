@@ -1,4 +1,4 @@
-export type Currency = 'JPY' | 'TWD'
+export type Currency = 'JPY' | 'KRW' | 'VND' | 'USD' | 'HKD' | 'CNY' | 'EUR' | 'THB' | 'GBP' | 'TWD'
 
 export type Profile = {
   id: string
@@ -16,6 +16,7 @@ export type Trip = {
   created_at: string
   start_date: string | null
   end_date: string | null
+  foreign_currency: Currency
 }
 
 export type TripMember = {

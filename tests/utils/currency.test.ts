@@ -130,3 +130,61 @@ describe('splitWithRemainder', () => {
     expect(result.valid).toBe(true)
   })
 })
+
+import { CURRENCIES, FOREIGN_CURRENCIES, foreignToTwdRate } from '@/lib/utils/currency'
+
+describe('CURRENCIES table', () => {
+  it('FOREIGN_CURRENCIES excludes TWD', () => {
+    expect(FOREIGN_CURRENCIES).not.toContain('TWD')
+    expect(FOREIGN_CURRENCIES).toContain('JPY')
+    expect(FOREIGN_CURRENCIES).toContain('HKD')
+  })
+})
+
+describe('formatAmount (multi-currency)', () => {
+  it('KRW: integer with ₩ prefix', () => {
+    expect(formatAmount(15000, 'KRW')).toBe('₩15,000')
+  })
+  it('HKD: 2 decimals with HK$ prefix', () => {
+    expect(formatAmount(123.4, 'HKD')).toBe('HK$123.40')
+  })
+})
+
+describe('splitEqually (zero-decimal currencies)', () => {
+  it('KRW splits as integers, remainder to first', () => {
+    expect(splitEqually(10, 3, 'KRW')).toEqual([4, 3, 3])
+  })
+  it('HKD splits with 2 decimals summing to total', () => {
+    const result = splitEqually(10, 3, 'HKD')
+    expect(Math.round(result.reduce((a, b) => a + b, 0) * 100)).toBe(1000)
+  })
+})
+
+describe('splitWithRemainder (zero-decimal currencies)', () => {
+  it('KRW rounds the auto share to integers', () => {
+    const result = splitWithRemainder(1000, 'KRW', [
+      { id: 'a', custom: 100 },
+      { id: 'b', custom: null },
+      { id: 'c', custom: null },
+      { id: 'd', custom: null },
+    ])
+    expect(result.splits[0].amount).toBe(100)
+    expect(result.splits.slice(1).map(s => s.amount)).toEqual([300, 300, 300])
+  })
+})
+
+describe('foreignToTwdRate', () => {
+  const usd = { USDTWD: 32.088, USDJPY: 161.522, USDHKD: 7.83788, USDUSD: 1 }
+  it('JPY→TWD = USDTWD / USDJPY', () => {
+    expect(foreignToTwdRate(usd, 'JPY')).toBe(0.1987)
+  })
+  it('USD→TWD = USDTWD (USDUSD = 1)', () => {
+    expect(foreignToTwdRate(usd, 'USD')).toBe(32.088)
+  })
+  it('TWD (home currency) returns null', () => {
+    expect(foreignToTwdRate(usd, 'TWD')).toBeNull()
+  })
+  it('missing pair returns null', () => {
+    expect(foreignToTwdRate({ USDTWD: 32 }, 'HKD')).toBeNull()
+  })
+})
