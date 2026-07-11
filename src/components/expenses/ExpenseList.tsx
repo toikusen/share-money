@@ -115,6 +115,15 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
     return `≈${formatAmount(sum, 'TWD')}`
   }
 
+  // 收合標題:消費筆數+金額,還款另計,避免筆數與金額描述不同集合
+  function collapsedLabel(items: ExpenseDisplayRow[]) {
+    const spendCount = items.filter(e => e.kind === 'expense').length
+    const settleCount = items.length - spendCount
+    if (spendCount === 0) return `${settleCount} 筆還款`
+    const base = `${spendCount} 筆 · ${groupSum(items)}`
+    return settleCount > 0 ? `${base} · ${settleCount} 筆還款` : base
+  }
+
   return (
     <>
     {detailExpense && (
@@ -140,7 +149,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
           >
             <span suppressHydrationWarning className="text-xs font-semibold text-ink-3">{group.date}</span>
             <span className="inline-flex items-center gap-1.5 text-[11.5px] text-ink-4 font-mono tabular-nums">
-              {open ? groupSum(group.items) : `${group.items.length} 筆 · ${groupSum(group.items)}`}
+              {open ? groupSum(group.items) : collapsedLabel(group.items)}
               <svg
                 width="12" height="12"
                 viewBox="0 0 24 24"
