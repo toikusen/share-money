@@ -2,7 +2,7 @@ import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { calculateMemberStats, minimizeTransfers } from '@/lib/utils/balance'
 import { approvedExpenseIds } from '@/lib/utils/expenses'
-import { convertToTWD } from '@/lib/utils/currency'
+import { convertToTWD, formatAmount } from '@/lib/utils/currency'
 import { TransferFlow } from '@/components/balance/TransferFlow'
 import { PaidVsShareChart } from '@/components/balance/PaidVsShareChart'
 import { CalcDisclosure } from '@/components/balance/CalcDisclosure'
@@ -76,6 +76,10 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
     0
   )
 
+  // 同時顯示行程幣別:TWD ÷ 匯率 = 外幣
+  const fc = trip.foreign_currency
+  const foreign = (twdAmount: number) => formatAmount(Math.abs(twdAmount) / trip.exchange_rate, fc)
+
   const flowTransfers = transfers.map(t => ({
     ...t,
     fromName: nameOf(t.from),
@@ -134,6 +138,9 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
             <span className={`text-[32px] font-bold font-mono tabular-nums tracking-tight ${heroClass}`}>
               {heroAmount}
             </span>
+            {!settled && (
+              <span className="text-[12.5px] text-ink-4 font-mono tabular-nums">≈ {foreign(myNet)}</span>
+            )}
             <span className="text-xs text-ink-4">{heroSub}</span>
           </section>
 
@@ -173,10 +180,13 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
                           <span className="text-ink-4/70 mx-1.5" aria-hidden="true">→</span>
                           <strong className="font-semibold text-ink">{t.to === meId ? '你' : t.toName}</strong>
                         </span>
-                        <span className={`ml-auto text-[15px] font-semibold font-mono tabular-nums ${
-                          t.to === meId ? 'text-gain' : t.from === meId ? 'text-owe' : 'text-ink-2'
-                        }`}>
-                          {twd(t.amountTWD)}
+                        <span className="ml-auto flex flex-col items-end leading-tight">
+                          <span className={`text-[15px] font-semibold font-mono tabular-nums ${
+                            t.to === meId ? 'text-gain' : t.from === meId ? 'text-owe' : 'text-ink-2'
+                          }`}>
+                            {twd(t.amountTWD)}
+                          </span>
+                          <span className="text-[11px] text-ink-4 font-mono tabular-nums">≈ {foreign(t.amountTWD)}</span>
                         </span>
                       </div>
                     )
@@ -193,7 +203,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
               <PaidVsShareChart rows={chartRows} />
               <div className="h-px bg-line my-3" />
               <p className="text-[11.5px] text-ink-4">
-                行程總費用 {twd(totalTWD)} · {profileMap.size} 位成員 · 1 {trip.foreign_currency} = {trip.exchange_rate} TWD
+                行程總費用 {twd(totalTWD)}（≈ {foreign(totalTWD)}） · {profileMap.size} 位成員 · 1 {trip.foreign_currency} = {trip.exchange_rate} TWD
               </p>
             </CalcDisclosure>
           </section>
