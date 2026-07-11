@@ -152,6 +152,12 @@ BEGIN
   WHERE id = p_expense_id AND created_by = auth.uid();
   IF v_old.id IS NULL THEN RAISE EXCEPTION 'NOT_OWNER'; END IF;
 
+  -- Settlements are delete-and-re-record only; editing could reshape them
+  -- into arbitrary multi-split expenses.
+  IF v_old.kind = 'settlement' THEN
+    RAISE EXCEPTION 'SETTLEMENT_NOT_EDITABLE';
+  END IF;
+
   IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = v_old.trip_id AND user_id = p_paid_by) THEN
     RAISE EXCEPTION 'PAID_BY_NOT_MEMBER';
   END IF;
@@ -259,7 +265,9 @@ CREATE OR REPLACE FUNCTION delete_expense(p_expense_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE v_expense expenses%ROWTYPE;
+DECLARE
+  v_expense expenses%ROWTYPE;
+  v_to_user uuid;
 BEGIN
   SELECT * INTO v_expense FROM expenses WHERE id = p_expense_id;
   -- Already gone (double-click, stale tab): deleting is idempotent.
@@ -267,9 +275,19 @@ BEGIN
   -- Only the expense creator may delete (mirrors expenses_delete RLS policy)
   IF v_expense.created_by <> auth.uid() THEN RAISE EXCEPTION 'NOT_OWNER'; END IF;
 
-  INSERT INTO activity_logs (trip_id, actor_id, action, details)
-  VALUES (v_expense.trip_id, auth.uid(), 'expense.deleted',
-          jsonb_build_object('title', v_expense.title, 'amount', v_expense.amount, 'currency', v_expense.currency));
+  IF v_expense.kind = 'settlement' THEN
+    -- A settlement has exactly one split: the receiver. Fetch before delete
+    -- so the log can say who the money was going to.
+    SELECT user_id INTO v_to_user FROM expense_splits WHERE expense_id = p_expense_id LIMIT 1;
+    INSERT INTO activity_logs (trip_id, actor_id, action, details)
+    VALUES (v_expense.trip_id, auth.uid(), 'settlement.deleted',
+            jsonb_build_object('title', v_expense.title, 'amount', v_expense.amount,
+                               'currency', v_expense.currency, 'to_user', v_to_user));
+  ELSE
+    INSERT INTO activity_logs (trip_id, actor_id, action, details)
+    VALUES (v_expense.trip_id, auth.uid(), 'expense.deleted',
+            jsonb_build_object('title', v_expense.title, 'amount', v_expense.amount, 'currency', v_expense.currency));
+  END IF;
 
   DELETE FROM expenses WHERE id = p_expense_id;
 END;
@@ -350,3 +368,64 @@ END;
 $$;
 REVOKE EXECUTE ON FUNCTION approve_all_pending() FROM public, anon;
 GRANT  EXECUTE ON FUNCTION approve_all_pending() TO authenticated;
+
+-- create_settlement (kept in sync with supabase/migrations/0015_settlements.sql)
+CREATE OR REPLACE FUNCTION create_settlement(
+  p_trip_id  uuid,
+  p_to_user  uuid,
+  p_amount   numeric,
+  p_currency text,
+  p_paid_at  timestamptz
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_expense_id uuid;
+  v_foreign    text;
+BEGIN
+  IF p_paid_at IS NULL THEN
+    RAISE EXCEPTION 'PAID_AT_REQUIRED';
+  END IF;
+
+  -- numeric accepts 'NaN' and NaN > 0 is TRUE in PostgreSQL, so the table
+  -- CHECK (amount > 0) does not stop it — reject explicitly.
+  IF p_amount = 'NaN'::numeric OR p_amount <= 0 THEN
+    RAISE EXCEPTION 'INVALID_AMOUNT';
+  END IF;
+
+  IF p_to_user = auth.uid() THEN
+    RAISE EXCEPTION 'SETTLE_SELF';
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = auth.uid()) THEN
+    RAISE EXCEPTION 'NOT_MEMBER';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = p_to_user) THEN
+    RAISE EXCEPTION 'SPLIT_USER_NOT_MEMBER';
+  END IF;
+
+  SELECT foreign_currency INTO v_foreign FROM trips WHERE id = p_trip_id;
+  IF p_currency NOT IN (v_foreign, 'TWD') THEN
+    RAISE EXCEPTION 'INVALID_CURRENCY';
+  END IF;
+  IF p_currency IN ('JPY','KRW','VND') AND p_amount != floor(p_amount) THEN
+    RAISE EXCEPTION 'SPLIT_NOT_INTEGER';
+  END IF;
+
+  INSERT INTO expenses (trip_id, title, amount, currency, paid_by, paid_at, created_by, kind)
+  VALUES (p_trip_id, '還款', p_amount, p_currency, auth.uid(), p_paid_at, auth.uid(), 'settlement')
+  RETURNING id INTO v_expense_id;
+
+  -- The receiver must confirm before the settlement counts toward balances.
+  INSERT INTO expense_splits (expense_id, user_id, amount, approval_status)
+  VALUES (v_expense_id, p_to_user, p_amount, 'pending');
+
+  INSERT INTO activity_logs (trip_id, actor_id, action, details)
+  VALUES (p_trip_id, auth.uid(), 'settlement.created',
+          jsonb_build_object('amount', p_amount, 'currency', p_currency, 'to_user', p_to_user));
+
+  RETURN v_expense_id;
+END;
+$$;
+REVOKE EXECUTE ON FUNCTION create_settlement(uuid, uuid, numeric, text, timestamptz) FROM public, anon;
+GRANT  EXECUTE ON FUNCTION create_settlement(uuid, uuid, numeric, text, timestamptz) TO authenticated;
