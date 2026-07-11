@@ -59,7 +59,9 @@ END $$;
 DO $$ BEGIN
   PERFORM create_settlement('d0000000-0000-4000-8000-000000000010',
     'a0000000-0000-4000-8000-000000000001', 100, 'TWD', now());
-  RAISE EXCEPTION 'FAIL: SETTLE_SELF not raised';
+  -- Sentinel must NOT contain the expected code, or a broken guard would
+  -- pass vacuously (sentinel caught below and matched by the LIKE).
+  RAISE EXCEPTION 'FAIL: no error raised (settle-self case)';
 EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE '%SETTLE_SELF%' THEN RAISE; END IF;
 END $$;
@@ -68,7 +70,7 @@ END $$;
 DO $$ BEGIN
   PERFORM create_settlement('d0000000-0000-4000-8000-000000000010',
     'b0000000-0000-4000-8000-000000000002', 'NaN'::numeric, 'TWD', now());
-  RAISE EXCEPTION 'FAIL: INVALID_AMOUNT not raised for NaN';
+  RAISE EXCEPTION 'FAIL: no error raised (NaN amount case)';
 EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE '%INVALID_AMOUNT%' THEN RAISE; END IF;
 END $$;
@@ -77,7 +79,7 @@ END $$;
 DO $$ BEGIN
   PERFORM create_settlement('d0000000-0000-4000-8000-000000000010',
     'b0000000-0000-4000-8000-000000000002', 0, 'TWD', now());
-  RAISE EXCEPTION 'FAIL: INVALID_AMOUNT not raised for 0';
+  RAISE EXCEPTION 'FAIL: no error raised (zero amount case)';
 EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE '%INVALID_AMOUNT%' THEN RAISE; END IF;
 END $$;
@@ -86,7 +88,7 @@ END $$;
 DO $$ BEGIN
   PERFORM create_settlement('d0000000-0000-4000-8000-000000000010',
     'b0000000-0000-4000-8000-000000000002', 100, 'USD', now());
-  RAISE EXCEPTION 'FAIL: INVALID_CURRENCY not raised';
+  RAISE EXCEPTION 'FAIL: no error raised (wrong currency case)';
 EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE '%INVALID_CURRENCY%' THEN RAISE; END IF;
 END $$;
@@ -95,7 +97,7 @@ END $$;
 DO $$ BEGIN
   PERFORM create_settlement('d0000000-0000-4000-8000-000000000010',
     'b0000000-0000-4000-8000-000000000002', 100.5, 'JPY', now());
-  RAISE EXCEPTION 'FAIL: SPLIT_NOT_INTEGER not raised';
+  RAISE EXCEPTION 'FAIL: no error raised (non-integer JPY case)';
 EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE '%SPLIT_NOT_INTEGER%' THEN RAISE; END IF;
 END $$;
@@ -108,7 +110,7 @@ BEGIN
   PERFORM update_expense_with_splits(v_id, 'hacked', 999, 'TWD',
     'a0000000-0000-4000-8000-000000000001', now(),
     '[{"user_id":"b0000000-0000-4000-8000-000000000002","amount":999}]'::jsonb);
-  RAISE EXCEPTION 'FAIL: SETTLEMENT_NOT_EDITABLE not raised';
+  RAISE EXCEPTION 'FAIL: no error raised (edit settlement case)';
 EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE '%SETTLEMENT_NOT_EDITABLE%' THEN RAISE; END IF;
 END $$;
@@ -119,7 +121,7 @@ SELECT set_config('request.jwt.claims',
 DO $$ BEGIN
   PERFORM create_settlement('d0000000-0000-4000-8000-000000000010',
     'b0000000-0000-4000-8000-000000000002', 100, 'TWD', now());
-  RAISE EXCEPTION 'FAIL: NOT_MEMBER not raised';
+  RAISE EXCEPTION 'FAIL: no error raised (non-member case)';
 EXCEPTION WHEN OTHERS THEN
   IF SQLERRM NOT LIKE '%NOT_MEMBER%' THEN RAISE; END IF;
 END $$;
