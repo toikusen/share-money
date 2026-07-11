@@ -3,6 +3,7 @@
 -- the debtor with exactly one pending split for the receiver. It flows through
 -- the existing balance math (payer +amount, receiver's owed +amount) and the
 -- existing approval flow (receiver must approve before it counts).
+-- Deploy order: apply this migration BEFORE deploying the app code (new code selects expenses.kind unconditionally).
 
 -- ============================================================
 -- SCHEMA

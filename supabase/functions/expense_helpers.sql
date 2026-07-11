@@ -70,6 +70,7 @@ DECLARE
   v_expense_id uuid;
   v_split      jsonb;
   v_split_sum  numeric := 0;
+  v_foreign    text;
 BEGIN
   IF p_paid_at IS NULL THEN
     RAISE EXCEPTION 'PAID_AT_REQUIRED';
@@ -82,6 +83,11 @@ BEGIN
     RAISE EXCEPTION 'PAID_BY_NOT_MEMBER';
   END IF;
 
+  SELECT foreign_currency INTO v_foreign FROM trips WHERE id = p_trip_id;
+  IF p_currency NOT IN (v_foreign, 'TWD') THEN
+    RAISE EXCEPTION 'INVALID_CURRENCY';
+  END IF;
+
   FOR v_split IN SELECT * FROM jsonb_array_elements(p_splits) LOOP
     IF NOT EXISTS (
       SELECT 1 FROM trip_members
@@ -90,8 +96,8 @@ BEGIN
 
     v_split_sum := v_split_sum + (v_split->>'amount')::numeric;
 
-    IF p_currency = 'JPY' AND (v_split->>'amount')::numeric != floor((v_split->>'amount')::numeric) THEN
-      RAISE EXCEPTION 'JPY_SPLIT_NOT_INTEGER';
+    IF p_currency IN ('JPY','KRW','VND') AND (v_split->>'amount')::numeric != floor((v_split->>'amount')::numeric) THEN
+      RAISE EXCEPTION 'SPLIT_NOT_INTEGER';
     END IF;
   END LOOP;
 
@@ -142,6 +148,7 @@ DECLARE
   v_new_splits jsonb;
   v_old_diff   jsonb := '{}'::jsonb;
   v_new_diff   jsonb := '{}'::jsonb;
+  v_foreign    text;
 BEGIN
   IF p_paid_at IS NULL THEN
     RAISE EXCEPTION 'PAID_AT_REQUIRED';
@@ -162,6 +169,11 @@ BEGIN
     RAISE EXCEPTION 'PAID_BY_NOT_MEMBER';
   END IF;
 
+  SELECT foreign_currency INTO v_foreign FROM trips WHERE id = v_old.trip_id;
+  IF p_currency NOT IN (v_foreign, 'TWD') THEN
+    RAISE EXCEPTION 'INVALID_CURRENCY';
+  END IF;
+
   FOR v_split IN SELECT * FROM jsonb_array_elements(p_splits) LOOP
     IF NOT EXISTS (
       SELECT 1 FROM trip_members
@@ -170,8 +182,8 @@ BEGIN
 
     v_split_sum := v_split_sum + (v_split->>'amount')::numeric;
 
-    IF p_currency = 'JPY' AND (v_split->>'amount')::numeric != floor((v_split->>'amount')::numeric) THEN
-      RAISE EXCEPTION 'JPY_SPLIT_NOT_INTEGER';
+    IF p_currency IN ('JPY','KRW','VND') AND (v_split->>'amount')::numeric != floor((v_split->>'amount')::numeric) THEN
+      RAISE EXCEPTION 'SPLIT_NOT_INTEGER';
     END IF;
   END LOOP;
 

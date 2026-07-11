@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { formatAmount } from '@/lib/utils/currency'
 import { formatExpenseDateTime } from '@/lib/utils/datetime'
-import type { Currency } from '@/types/database'
+import type { Currency, ExpenseKind } from '@/types/database'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
 
@@ -15,6 +15,7 @@ type Props = {
     currency: Currency
     paid_at: string
     note: string | null
+    kind: ExpenseKind
     payer: MemberProfile | null
     expense_splits: Array<{ user_id: string; amount: number }>
   }
@@ -25,6 +26,10 @@ type Props = {
 
 export function ExpenseDetailModal({ expense, members, timeZone, onClose }: Props) {
   const memberMap = Object.fromEntries(members.map(m => [m.id, m.display_name]))
+  const isSettlement = expense.kind === 'settlement'
+  const receiverId = expense.expense_splits[0]?.user_id
+  // Matches ExpenseList's settlementLabel fallback so the title reads identically.
+  const title = isSettlement ? `還款給 ${memberMap[receiverId ?? ''] ?? '成員'}` : expense.title
   const panelRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   useEffect(() => { onCloseRef.current = onClose })
@@ -73,7 +78,7 @@ export function ExpenseDetailModal({ expense, members, timeZone, onClose }: Prop
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">
-          <h2 id="expense-detail-title" className="font-bold text-[17px]">{expense.title}</h2>
+          <h2 id="expense-detail-title" className="font-bold text-[17px]">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -99,19 +104,31 @@ export function ExpenseDetailModal({ expense, members, timeZone, onClose }: Prop
           </div>
         )}
 
-        <div>
-          <p className="text-xs font-medium text-ink-3 mb-2">分帳明細</p>
-          <div className="flex flex-col gap-1.5">
-            {expense.expense_splits.map(split => (
-              <div key={split.user_id} className="flex items-center justify-between bg-fill rounded-[10px] px-3 py-2">
-                <span className="text-[13.5px] text-ink">{memberMap[split.user_id] ?? split.user_id}</span>
-                <span className="text-[13.5px] font-semibold font-mono tabular-nums text-ink">
-                  {formatAmount(split.amount, expense.currency)}
-                </span>
-              </div>
-            ))}
+        {isSettlement ? (
+          <div>
+            <p className="text-xs font-medium text-ink-3 mb-2">收款人</p>
+            <div className="flex items-center justify-between bg-fill rounded-[10px] px-3 py-2">
+              <span className="text-[13.5px] text-ink">{memberMap[receiverId ?? ''] ?? receiverId}</span>
+              <span className="text-[13.5px] font-semibold font-mono tabular-nums text-ink">
+                {formatAmount(expense.expense_splits[0]?.amount ?? 0, expense.currency)}
+              </span>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div>
+            <p className="text-xs font-medium text-ink-3 mb-2">分帳明細</p>
+            <div className="flex flex-col gap-1.5">
+              {expense.expense_splits.map(split => (
+                <div key={split.user_id} className="flex items-center justify-between bg-fill rounded-[10px] px-3 py-2">
+                  <span className="text-[13.5px] text-ink">{memberMap[split.user_id] ?? split.user_id}</span>
+                  <span className="text-[13.5px] font-semibold font-mono tabular-nums text-ink">
+                    {formatAmount(split.amount, expense.currency)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
