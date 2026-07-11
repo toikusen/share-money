@@ -4,6 +4,7 @@ import { calculateMemberStats, calculateNetBalances, minimizeTransfers } from '@
 import { approvedExpenseIds } from '@/lib/utils/expenses'
 import { convertToTWD, formatAmount } from '@/lib/utils/currency'
 import { TransferFlow } from '@/components/balance/TransferFlow'
+import { RecordSettlementButton } from '@/components/balance/RecordSettlementButton'
 import { PaidVsShareChart } from '@/components/balance/PaidVsShareChart'
 import { CalcDisclosure } from '@/components/balance/CalcDisclosure'
 import { avatarBg, avatarFg, avatarChar, avatarHue } from '@/lib/utils/avatar'
@@ -72,6 +73,14 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   const stats = calculateMemberStats(spendRows, spendSplits, trip.exchange_rate)
   const net = calculateNetBalances(approvedRows, approvedSplits, trip.exchange_rate)
   const transfers = minimizeTransfers(net)
+
+  // 已記錄、待收款方確認的還款——顯示提示避免重複記
+  const pendingSettlements = ((expenses ?? []) as (ExpenseRow & {
+    expense_splits: { user_id: string; approval_status: string }[]
+  })[])
+    .filter(e => e.kind === 'settlement')
+    .map(e => ({ id: e.id, from: e.paid_by, amount: e.amount, currency: e.currency, split: e.expense_splits[0] }))
+    .filter(s => s.split?.approval_status === 'pending')
 
   // Include members with no expenses so every participant shows up
   const allStats = Array.from(profileMap.keys()).map(userId =>
@@ -187,18 +196,40 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
                           <span className="text-ink-4/70 mx-1.5" aria-hidden="true">→</span>
                           <strong className="font-semibold text-ink">{t.to === meId ? '你' : t.toName}</strong>
                         </span>
-                        <span className="ml-auto flex flex-col items-end leading-tight">
-                          <span className={`text-[15px] font-semibold font-mono tabular-nums ${
-                            t.to === meId ? 'text-gain' : t.from === meId ? 'text-owe' : 'text-ink-2'
-                          }`}>
-                            {twd(t.amountTWD)}
+                        <span className="ml-auto flex items-center gap-2">
+                          <span className="flex flex-col items-end leading-tight">
+                            <span className={`text-[15px] font-semibold font-mono tabular-nums ${
+                              t.to === meId ? 'text-gain' : t.from === meId ? 'text-owe' : 'text-ink-2'
+                            }`}>
+                              {twd(t.amountTWD)}
+                            </span>
+                            <span className="text-[11px] text-ink-4 font-mono tabular-nums">≈ {foreign(t.amountTWD)}</span>
                           </span>
-                          <span className="text-[11px] text-ink-4 font-mono tabular-nums">≈ {foreign(t.amountTWD)}</span>
+                          {t.from === meId && (
+                            <RecordSettlementButton
+                              tripId={id}
+                              toUserId={t.to}
+                              toName={t.toName}
+                              suggestedTWD={t.amountTWD}
+                              foreignCurrency={trip.foreign_currency}
+                              exchangeRate={trip.exchange_rate}
+                            />
+                          )}
                         </span>
                       </div>
                     )
                   })}
                 </div>
+                {pendingSettlements.length > 0 && (
+                  <div className="bg-amber-500/8 rounded-xl px-3.5 py-2.5 flex flex-col gap-1">
+                    {pendingSettlements.map(s => (
+                      <p key={s.id} className="text-[12px] text-amber-700">
+                        {s.from === meId ? '你' : nameOf(s.from)} 已記錄還款 {formatAmount(s.amount, s.currency)} 給{' '}
+                        {s.split.user_id === meId ? '你' : nameOf(s.split.user_id)},待確認後計入
+                      </p>
+                    ))}
+                  </div>
+                )}
                 <p className="text-[11.5px] text-ink-4 px-0.5">與你無關的轉帳會淡化顯示</p>
               </>
             )}

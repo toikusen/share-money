@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useEffect, useRef } from 'react'
 import { splitEqually, isEqualSplit, splitWithRemainder, formatAmount, CURRENCIES } from '@/lib/utils/currency'
+import { toDateTimeLocalValue } from '@/lib/utils/datetime'
 import type { Profile, Currency, SplitInput } from '@/types/database'
 
 export type ExpenseFormValues = {
@@ -24,14 +25,6 @@ type Props = {
   initial?: ExpenseFormValues
   onSubmit: (values: ExpenseFormValues) => Promise<{ error?: string; success?: boolean } | undefined>
   onClose: () => void
-}
-
-function toDateTimeLocalValue(value?: string) {
-  const date = value ? new Date(value) : new Date()
-  if (Number.isNaN(date.getTime())) return ''
-
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-  return localDate.toISOString().slice(0, 16)
 }
 
 const inputClass =

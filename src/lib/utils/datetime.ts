@@ -63,3 +63,12 @@ export function groupByPaidDate<T extends { paid_at: string }>(
     return groups
   }, [])
 }
+
+/** Formats an ISO string (default: now) as an <input type="datetime-local"> value in device-local time. */
+export function toDateTimeLocalValue(value?: string) {
+  const date = value ? new Date(value) : new Date()
+  if (Number.isNaN(date.getTime())) return ''
+
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return localDate.toISOString().slice(0, 16)
+}
