@@ -3,10 +3,11 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { validateExpenseInput } from '@/lib/utils/expenses'
+import { validateExpenseInput, validateSettlementInput } from '@/lib/utils/expenses'
 import type { SplitInput, Currency } from '@/types/database'
 import { sendPushToUsers } from '@/lib/push'
-import { pendingRecipients, approvalNeededPayload, rejectedPayload, approvedPayload } from '@/lib/notify'
+import { pendingRecipients, approvalNeededPayload, rejectedPayload, approvedPayload, settlementRecordedPayload } from '@/lib/notify'
+import { formatAmount } from '@/lib/utils/currency'
 
 const RPC_ERROR_MESSAGES: Record<string, string> = {
   NOT_MEMBER: '你不是此行程成員',
@@ -18,6 +19,9 @@ const RPC_ERROR_MESSAGES: Record<string, string> = {
   INVALID_CURRENCY: '幣別與此行程不符',
   PAID_AT_REQUIRED: '請選擇付款時間',
   EXPENSE_REJECTED: '此費用已被拒絕,請等建立者修改後再審核',
+  SETTLE_SELF: '不能還款給自己',
+  INVALID_AMOUNT: '金額無效',
+  SETTLEMENT_NOT_EDITABLE: '還款紀錄不可編輯,請刪除後重新記錄',
 }
 
 function mapRpcError(message: string): string {
@@ -106,6 +110,42 @@ export async function updateExpenseAction(params: {
   if (error) return { error: mapRpcError(error.message) }
 
   revalidatePath(`/trips/${tripId}`)
+  return { success: true }
+}
+
+export async function createSettlementAction(params: {
+  tripId: string
+  toUser: string
+  amount: number
+  currency: Currency
+  paidAt: string
+}) {
+  const { tripId, toUser, amount, currency, paidAt } = params
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: '請先登入' }
+
+  const validationError = validateSettlementInput({ amount, currency, fromUser: user.id, toUser })
+  if (validationError) return { error: validationError }
+
+  const paidAtIso = normalizePaidAt(paidAt)
+  if (!paidAtIso) return { error: '請選擇還款時間' }
+
+  const { error } = await supabase.rpc('create_settlement', {
+    p_trip_id: tripId,
+    p_to_user: toUser,
+    p_amount: amount,
+    p_currency: currency,
+    p_paid_at: paidAtIso,
+  })
+  if (error) return { error: mapRpcError(error.message) }
+
+  const { data: me } = await supabase.from('profiles').select('display_name').eq('id', user.id).single()
+  await sendPushToUsers([toUser], settlementRecordedPayload(me?.display_name ?? '成員', formatAmount(amount, currency)))
+
+  revalidatePath(`/trips/${tripId}`)
+  revalidatePath(`/trips/${tripId}/balance`)
   return { success: true }
 }
 

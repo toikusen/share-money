@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   validateExpenseInput,
+  validateSettlementInput,
   isExpenseApproved,
   isExpenseRejected,
   approvedExpenseIds,
@@ -94,5 +95,26 @@ describe('validateExpenseInput', () => {
         ],
       })
     ).toBeNull()
+  })
+})
+
+describe('validateSettlementInput', () => {
+  const base = { amount: 500, currency: 'TWD' as const, fromUser: 'a', toUser: 'b' }
+
+  it('accepts a valid input', () => {
+    expect(validateSettlementInput(base)).toBeNull()
+  })
+  it('rejects non-positive and non-finite amounts', () => {
+    expect(validateSettlementInput({ ...base, amount: 0 })).toBe('金額必須大於 0')
+    expect(validateSettlementInput({ ...base, amount: -5 })).toBe('金額必須大於 0')
+    expect(validateSettlementInput({ ...base, amount: NaN })).toBe('金額必須大於 0')
+    expect(validateSettlementInput({ ...base, amount: Infinity })).toBe('金額必須大於 0')
+  })
+  it('rejects fractional amounts in zero-decimal currencies', () => {
+    expect(validateSettlementInput({ ...base, currency: 'JPY', amount: 100.5 })).toBe('此幣別金額必須為整數')
+    expect(validateSettlementInput({ ...base, currency: 'JPY', amount: 100 })).toBeNull()
+  })
+  it('rejects settling with yourself', () => {
+    expect(validateSettlementInput({ ...base, toUser: 'a' })).toBe('不能還款給自己')
   })
 })

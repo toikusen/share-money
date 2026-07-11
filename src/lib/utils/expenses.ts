@@ -1,4 +1,5 @@
-import type { ApprovalStatus, SplitInput } from '@/types/database'
+import type { ApprovalStatus, SplitInput, Currency } from '@/types/database'
+import { CURRENCIES } from './currency'
 
 /** An expense counts toward settlement only when every split is approved. */
 export function isExpenseApproved(splits: { approval_status: ApprovalStatus }[]): boolean {
@@ -49,5 +50,22 @@ export function validateExpenseInput(params: {
   const splitSum = splits.reduce((s, sp) => s + sp.amount, 0)
   if (Math.abs(splitSum - amount) > 0.005) return '分擔金額總和不等於費用金額'
 
+  return null
+}
+
+/**
+ * Validates settlement input shared by the record-settlement action/UI.
+ * Returns an error message, or null when valid.
+ */
+export function validateSettlementInput(params: {
+  amount: number
+  currency: Currency
+  fromUser: string
+  toUser: string
+}): string | null {
+  const { amount, currency, fromUser, toUser } = params
+  if (!Number.isFinite(amount) || amount <= 0) return '金額必須大於 0'
+  if (CURRENCIES[currency].decimals === 0 && !Number.isInteger(amount)) return '此幣別金額必須為整數'
+  if (fromUser === toUser) return '不能還款給自己'
   return null
 }
