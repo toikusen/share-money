@@ -60,7 +60,13 @@ export function RecordSettlementButton({ tripId, toUserId, toName, suggestedTWD,
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setCurrency('TWD')
+          setAmount(suggestedFor('TWD', suggestedTWD, exchangeRate))
+          setPaidAt(toDateTimeLocalValue())
+          setError(null)
+          setOpen(true)
+        }}
         className="shrink-0 rounded-full bg-accent/10 px-2.5 py-1 text-[11.5px] font-semibold text-accent hover:bg-accent/15 transition-colors"
       >
         記錄還款
