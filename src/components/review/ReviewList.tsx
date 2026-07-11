@@ -57,9 +57,15 @@ export function ReviewList({ reviews }: { reviews: PendingReview[] }) {
                   >
                     {r.tripName}
                   </Link>
-                  <div className="font-medium text-[15px] text-ink break-words mt-0.5">{r.title}</div>
+                  <div className="font-medium text-[15px] text-ink break-words mt-0.5">
+                    {r.kind === 'settlement' ? '還款確認' : r.title}
+                  </div>
                   <div className="text-xs text-ink-4 mt-0.5">
-                    {r.payerName} 付 · 你分擔 <span className="font-mono tabular-nums">{formatAmount(r.myShare, r.currency)}</span>
+                    {r.kind === 'settlement' ? (
+                      <>{r.payerName} 表示已還你 <span className="font-mono tabular-nums">{formatAmount(r.amount, r.currency)}</span></>
+                    ) : (
+                      <>{r.payerName} 付 · 你分擔 <span className="font-mono tabular-nums">{formatAmount(r.myShare, r.currency)}</span></>
+                    )}
                   </div>
                 </div>
                 <div className="text-right shrink-0">
@@ -85,7 +91,7 @@ export function ReviewList({ reviews }: { reviews: PendingReview[] }) {
                   onClick={() => run(() => approveExpenseAction(r.expenseId, r.tripId), r.expenseId)}
                   className="flex-1 rounded-lg bg-gain/10 text-[13px] font-semibold text-gain py-2 hover:bg-gain/15 transition-colors disabled:opacity-50"
                 >
-                  同意
+                  {r.kind === 'settlement' ? '確認收款' : '同意'}
                 </button>
               </div>
             </div>

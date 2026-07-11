@@ -1,6 +1,6 @@
 import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { isExpenseRejected, approvalProgress } from '@/lib/utils/expenses'
-import type { Currency } from '@/types/database'
+import type { Currency, ExpenseKind } from '@/types/database'
 
 export type PendingReview = {
   expenseId: string
@@ -14,6 +14,7 @@ export type PendingReview = {
   myShare: number
   approved: number
   total: number
+  kind: ExpenseKind
 }
 
 type Row = {
@@ -25,6 +26,7 @@ type Row = {
     currency: Currency
     paid_at: string
     trip_id: string
+    kind: ExpenseKind
     trip: { name: string } | null
     payer: { display_name: string } | null
     splits: { approval_status: 'pending' | 'approved' | 'rejected' }[]
@@ -47,7 +49,7 @@ export async function getPendingReviews(): Promise<PendingReview[]> {
     .select(`
       amount,
       expense:expenses!inner(
-        id, title, amount, currency, paid_at, trip_id,
+        id, title, amount, currency, paid_at, trip_id, kind,
         trip:trips!inner(name),
         payer:profiles!paid_by(display_name),
         splits:expense_splits(approval_status)
@@ -78,6 +80,7 @@ export async function getPendingReviews(): Promise<PendingReview[]> {
         myShare: r.amount,
         approved,
         total,
+        kind: r.expense.kind,
       }
     })
     .sort((a, b) => b.paidAt.localeCompare(a.paidAt))
