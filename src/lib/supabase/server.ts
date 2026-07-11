@@ -24,11 +24,18 @@ export async function createClient() {
 }
 
 /**
- * Request-deduped auth lookup: layout, page and shared loaders all await the
- * same single round trip to Supabase Auth instead of one each.
+ * Request-deduped auth lookup. Uses getClaims() so that — once the Supabase
+ * project signs JWTs with an asymmetric key (ES256/RS256) — the access token
+ * is verified locally via WebCrypto with zero network round trip, instead of
+ * calling Supabase Auth on every page render. Under legacy HS256 keys
+ * getClaims() transparently falls back to a getUser() network call, so this is
+ * safe today and gets faster automatically once the JWT keys are migrated.
+ * Only id/email are consumed by callers (verified 2026-07-10).
  */
 export const getAuthUser = cache(async () => {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+  const { data, error } = await supabase.auth.getClaims()
+  if (error || !data?.claims) return null
+  const { sub, email } = data.claims
+  return { id: sub as string, email: email as string | undefined }
 })
