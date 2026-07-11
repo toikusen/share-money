@@ -77,6 +77,38 @@ describe('calculateMemberStats', () => {
   })
 })
 
+describe('settlement flow through balance math', () => {
+  // bob owes alice 109 TWD after e1 (1000 JPY @ 0.218, split 50/50)
+  const expense = { id: 'e1', amount: 1000, currency: 'JPY' as const, paid_by: 'alice' }
+  const expenseSplits = [
+    { expense_id: 'e1', user_id: 'alice', amount: 500 },
+    { expense_id: 'e1', user_id: 'bob', amount: 500 },
+  ]
+
+  it('partial repayment reduces the suggested transfer', () => {
+    const settlement = { id: 's1', amount: 50, currency: 'TWD' as const, paid_by: 'bob' }
+    const settlementSplit = { expense_id: 's1', user_id: 'alice', amount: 50 }
+    const net = calculateNetBalances([expense, settlement], [...expenseSplits, settlementSplit], 0.218)
+    const transfers = minimizeTransfers(net)
+    expect(transfers).toEqual([{ from: 'bob', to: 'alice', amountTWD: 59 }])
+  })
+
+  it('full repayment settles: no transfers left', () => {
+    const settlement = { id: 's1', amount: 109, currency: 'TWD' as const, paid_by: 'bob' }
+    const settlementSplit = { expense_id: 's1', user_id: 'alice', amount: 109 }
+    const net = calculateNetBalances([expense, settlement], [...expenseSplits, settlementSplit], 0.218)
+    expect(minimizeTransfers(net)).toHaveLength(0)
+  })
+
+  it('foreign-currency repayment converts at the trip rate', () => {
+    // 500 JPY = 109 TWD at 0.218 → full settle
+    const settlement = { id: 's1', amount: 500, currency: 'JPY' as const, paid_by: 'bob' }
+    const settlementSplit = { expense_id: 's1', user_id: 'alice', amount: 500 }
+    const net = calculateNetBalances([expense, settlement], [...expenseSplits, settlementSplit], 0.218)
+    expect(minimizeTransfers(net)).toHaveLength(0)
+  })
+})
+
 describe('minimizeTransfers', () => {
   it('simple: bob owes alice 100', () => {
     const balances = [

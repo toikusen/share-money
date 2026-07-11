@@ -1,6 +1,6 @@
 import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-import { calculateMemberStats, minimizeTransfers } from '@/lib/utils/balance'
+import { calculateMemberStats, calculateNetBalances, minimizeTransfers } from '@/lib/utils/balance'
 import { approvedExpenseIds } from '@/lib/utils/expenses'
 import { convertToTWD, formatAmount } from '@/lib/utils/currency'
 import { TransferFlow } from '@/components/balance/TransferFlow'
@@ -11,7 +11,7 @@ import type { Currency } from '@/types/database'
 import Link from 'next/link'
 
 type MemberProfile = { id: string; display_name: string }
-type ExpenseRow = { id: string; amount: number; currency: Currency; paid_by: string }
+type ExpenseRow = { id: string; amount: number; currency: Currency; paid_by: string; kind: 'expense' | 'settlement' }
 type SplitRow = { expense_id: string; user_id: string; amount: number }
 
 const twd = (n: number) => `NT$${Math.round(Math.abs(n)).toLocaleString('zh-TW')}`
@@ -27,7 +27,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
       supabase.from('trip_members').select('user_id, profiles(id, display_name)').eq('trip_id', id),
       supabase
         .from('expenses')
-        .select('id, amount, currency, paid_by, expense_splits(expense_id, user_id, amount, approval_status)')
+        .select('id, amount, currency, paid_by, kind, expense_splits(expense_id, user_id, amount, approval_status)')
         .eq('trip_id', id),
     ])
   const meId = user!.id
@@ -61,17 +61,24 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
 
   // Only fully-approved expenses settle; pending/rejected are excluded everywhere below.
   const approvedIds = approvedExpenseIds((splits ?? []) as { expense_id: string; approval_status: 'pending' | 'approved' | 'rejected' }[])
-  const expenseRows = ((expenses ?? []) as ExpenseRow[]).filter(e => approvedIds.has(e.id))
+  const approvedRows = ((expenses ?? []) as ExpenseRow[]).filter(e => approvedIds.has(e.id))
   const approvedSplits = ((splits ?? []) as SplitRow[]).filter(s => approvedIds.has(s.expense_id))
-  const stats = calculateMemberStats(expenseRows, approvedSplits, trip.exchange_rate)
-  const transfers = minimizeTransfers(stats.map(s => ({ userId: s.userId, netTWD: s.netTWD })))
+
+  // 還款計入淨額,但不是消費——統計(墊付/應攤圖、總費用)只看 kind='expense'
+  const spendRows = approvedRows.filter(e => e.kind === 'expense')
+  const spendIds = new Set(spendRows.map(e => e.id))
+  const spendSplits = approvedSplits.filter(s => spendIds.has(s.expense_id))
+
+  const stats = calculateMemberStats(spendRows, spendSplits, trip.exchange_rate)
+  const net = calculateNetBalances(approvedRows, approvedSplits, trip.exchange_rate)
+  const transfers = minimizeTransfers(net)
 
   // Include members with no expenses so every participant shows up
   const allStats = Array.from(profileMap.keys()).map(userId =>
     stats.find(s => s.userId === userId) ?? { userId, paidTWD: 0, owedTWD: 0, netTWD: 0 }
   )
 
-  const totalTWD = expenseRows.reduce(
+  const totalTWD = spendRows.reduce(
     (sum, e) => sum + convertToTWD(e.amount, e.currency, trip.exchange_rate),
     0
   )
@@ -87,7 +94,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   }))
 
   // 個人化重點:你會收到/需要付出多少
-  const myNet = allStats.find(s => s.userId === meId)?.netTWD ?? 0
+  const myNet = net.find(n => n.userId === meId)?.netTWD ?? 0
   const settled = Math.abs(myNet) < 0.005
   const toMeCount = transfers.filter(t => t.to === meId).length
   const fromMeCount = transfers.filter(t => t.from === meId).length
@@ -128,7 +135,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
         <span className="text-xs text-ink-4 ml-auto truncate">{trip.name}</span>
       </div>
 
-      {expenseRows.length === 0 ? (
+      {approvedRows.length === 0 && (expenses ?? []).length === 0 ? (
         <p className="text-center text-sm text-ink-4 py-10">尚無費用紀錄</p>
       ) : (
         <div className="flex flex-col gap-6">

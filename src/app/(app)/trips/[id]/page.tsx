@@ -143,7 +143,9 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
       {/* 每日支出(點長條跳到該日明細) */}
       <DailySpendChart
-        expenses={approvedRows.map(e => ({ paid_at: e.paid_at, amount: e.amount, currency: e.currency }))}
+        expenses={approvedRows
+          .filter(e => e.kind === 'expense')
+          .map(e => ({ paid_at: e.paid_at, amount: e.amount, currency: e.currency }))}
         exchangeRate={trip.exchange_rate}
         startDate={trip.start_date}
         endDate={trip.end_date}

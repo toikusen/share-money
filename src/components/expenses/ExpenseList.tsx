@@ -7,7 +7,7 @@ import { deleteExpenseAction } from '@/lib/actions/expenses'
 import { convertToTWD, formatAmount } from '@/lib/utils/currency'
 import { formatExpenseDate, formatExpenseDateTime, formatExpenseTime, groupByPaidDate } from '@/lib/utils/datetime'
 import { isExpenseApproved, isExpenseRejected, approvalProgress } from '@/lib/utils/expenses'
-import type { ApprovalStatus, Currency } from '@/types/database'
+import type { ApprovalStatus, Currency, ExpenseKind } from '@/types/database'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
 
@@ -20,6 +20,7 @@ export type ExpenseDisplayRow = {
   created_by: string
   paid_at: string
   note: string | null
+  kind: ExpenseKind
   expense_splits: Array<{ user_id: string; amount: number; approval_status: ApprovalStatus }>
   payer: MemberProfile | null
 }
