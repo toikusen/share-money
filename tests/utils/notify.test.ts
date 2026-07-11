@@ -4,6 +4,7 @@ import {
   approvalNeededPayload,
   rejectedPayload,
   approvedPayload,
+  settlementRecordedPayload,
 } from '@/lib/notify'
 
 describe('pendingRecipients', () => {
@@ -26,5 +27,15 @@ describe('payload builders', () => {
     expect(rejectedPayload('拉麵', 't1').url).toBe('/trips/t1')
     expect(approvedPayload('拉麵', 't1').url).toBe('/trips/t1')
     expect(rejectedPayload('拉麵', 't1').url.startsWith('/')).toBe(true)
+  })
+})
+
+describe('settlementRecordedPayload', () => {
+  it('names the payer and amount, links to /review', () => {
+    const p = settlementRecordedPayload('小明', 'NT$500')
+    expect(p.title).toBe('有還款等你確認')
+    expect(p.body).toContain('小明')
+    expect(p.body).toContain('NT$500')
+    expect(p.url).toBe('/review')
   })
 })

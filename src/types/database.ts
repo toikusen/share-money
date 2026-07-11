@@ -3,6 +3,8 @@ export type Currency = 'JPY' | 'KRW' | 'VND' | 'USD' | 'HKD' | 'CNY' | 'EUR' | '
 /** Any currency a trip can use as its foreign currency — everything except the home currency TWD. */
 export type ForeignCurrency = Exclude<Currency, 'TWD'>
 
+export type ExpenseKind = 'expense' | 'settlement'
+
 export type Profile = {
   id: string
   display_name: string
@@ -39,6 +41,7 @@ export type Expense = {
   paid_at: string
   note: string | null
   created_at: string
+  kind: ExpenseKind
 }
 
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
@@ -84,6 +87,8 @@ export type ActivityEvent =
   | { action: 'expense.created' | 'expense.deleted'; details: { title: string; amount: number; currency: Currency } }
   // title is the post-update title snapshot, for display
   | { action: 'expense.updated'; details: { title: string; old: ExpenseDiff; new: ExpenseDiff } }
+  | { action: 'settlement.created'; details: { amount: number; currency: Currency; to_user: string } }
+  | { action: 'settlement.deleted'; details: { title: string; amount: number; currency: Currency; to_user: string } }
 
 export type ActivityAction = ActivityEvent['action']
 

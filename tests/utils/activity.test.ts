@@ -92,4 +92,26 @@ describe('formatActivityText', () => {
       })).toBe('小明 編輯了『晚餐』：金額從 ¥1,200 改為 ¥1,500、調整了分擔方式')
     })
   })
+
+  describe('settlement activity', () => {
+    const nameOf = (id: string) => (id === 'u2' ? '小華' : id)
+
+    it('formats settlement.created', () => {
+      const text = formatActivityText(
+        { action: 'settlement.created', details: { amount: 500, currency: 'TWD', to_user: 'u2' } },
+        '小明',
+        nameOf,
+      )
+      expect(text).toBe('小明 記錄了還款 NT$500.00 給 小華')
+    })
+
+    it('formats settlement.deleted', () => {
+      const text = formatActivityText(
+        { action: 'settlement.deleted', details: { title: '還款', amount: 1000, currency: 'JPY', to_user: 'u2' } },
+        '小明',
+        nameOf,
+      )
+      expect(text).toBe('小明 刪除了給 小華 的還款 ¥1,000')
+    })
+  })
 })

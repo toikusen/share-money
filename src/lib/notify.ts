@@ -18,3 +18,7 @@ export function rejectedPayload(expenseTitle: string, tripId: string): Notificat
 export function approvedPayload(expenseTitle: string, tripId: string): NotificationPayload {
   return { title: '費用已全員通過', body: `「${expenseTitle}」已正式計入結算`, url: `/trips/${tripId}` }
 }
+
+export function settlementRecordedPayload(payerName: string, amountText: string): NotificationPayload {
+  return { title: '有還款等你確認', body: `${payerName} 記錄了還款 ${amountText},請確認`, url: '/review' }
+}
