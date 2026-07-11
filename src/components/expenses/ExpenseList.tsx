@@ -57,6 +57,9 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
     () => undefined,
   )
 
+  const memberName = (userId?: string) => members.find(m => m.id === userId)?.display_name ?? '成員'
+  const settlementLabel = (e: ExpenseDisplayRow) => `還款給 ${memberName(e.expense_splits[0]?.user_id)}`
+
   const expenseGroups = groupByPaidDate(expenses, timeZone)
   const todayDate = formatExpenseDate(new Date().toISOString(), timeZone)
   const [toggled, setToggled] = useState<Set<string>>(new Set())
@@ -101,12 +104,14 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
 
   // 當日小計:同一幣別顯示原幣,混幣別退回換算後的 NT$
   function groupSum(items: ExpenseDisplayRow[]) {
-    const uniform = items.length > 0 && items.every(e => e.currency === items[0].currency)
+    const spendItems = items.filter(e => e.kind === 'expense')
+    if (spendItems.length === 0) return `${items.length} 筆還款`
+    const uniform = spendItems.every(e => e.currency === spendItems[0].currency)
     if (uniform) {
-      const sum = items.reduce((a, e) => a + e.amount, 0)
-      return formatAmount(sum, items[0].currency)
+      const sum = spendItems.reduce((a, e) => a + e.amount, 0)
+      return formatAmount(sum, spendItems[0].currency)
     }
-    const sum = items.reduce((a, e) => a + convertToTWD(e.amount, e.currency, exchangeRate), 0)
+    const sum = spendItems.reduce((a, e) => a + convertToTWD(e.amount, e.currency, exchangeRate), 0)
     return `≈${formatAmount(sum, 'TWD')}`
   }
 
@@ -166,7 +171,17 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                     className="min-w-0 flex-1 text-left"
                   >
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-medium text-[14.5px] text-ink break-words">{expense.title}</span>
+                      {expense.kind === 'settlement' && (
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-accent shrink-0">
+                          <path d="M17 3l4 4-4 4" />
+                          <path d="M21 7H9" />
+                          <path d="M7 21l-4-4 4-4" />
+                          <path d="M3 17h12" />
+                        </svg>
+                      )}
+                      <span className="font-medium text-[14.5px] text-ink break-words">
+                        {expense.kind === 'settlement' ? settlementLabel(expense) : expense.title}
+                      </span>
                       <StatusBadge splits={expense.expense_splits} />
                     </div>
                     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-4 mt-0.5">
@@ -174,7 +189,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                         {formatExpenseTime(expense.paid_at, timeZone)}
                       </time>
                       <span aria-hidden="true">·</span>
-                      <span>{expense.payer?.display_name} 付</span>
+                      <span>{expense.payer?.display_name} {expense.kind === 'settlement' ? '還' : '付'}</span>
                     </div>
                   </button>
                   <div className="flex items-center gap-1 shrink-0">
@@ -187,22 +202,24 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                     </button>
                     {expense.created_by === currentUserId && (
                       <div className="flex items-center">
-                        <EditExpenseButton
-                          tripId={tripId}
-                          members={members}
-                          currentUserId={currentUserId}
-                          foreignCurrency={foreignCurrency}
-                          expense={{
-                            id: expense.id,
-                            title: expense.title,
-                            amount: expense.amount,
-                            currency: expense.currency,
-                            paid_by: expense.paid_by,
-                            paid_at: expense.paid_at,
-                            note: expense.note,
-                            splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
-                          }}
-                        />
+                        {expense.kind === 'expense' && (
+                          <EditExpenseButton
+                            tripId={tripId}
+                            members={members}
+                            currentUserId={currentUserId}
+                            foreignCurrency={foreignCurrency}
+                            expense={{
+                              id: expense.id,
+                              title: expense.title,
+                              amount: expense.amount,
+                              currency: expense.currency,
+                              paid_by: expense.paid_by,
+                              paid_at: expense.paid_at,
+                              note: expense.note,
+                              splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
+                            }}
+                          />
+                        )}
                         <form
                           action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}
                           className="flex items-center"
