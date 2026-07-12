@@ -19,7 +19,7 @@ function extractKeys(sub: PushSubscription): { endpoint: string; p256dh: string;
   return { endpoint: sub.endpoint, p256dh: json.keys!.p256dh, auth: json.keys!.auth }
 }
 
-export async function enablePush(): Promise<'enabled' | 'denied' | 'unsupported'> {
+export async function enablePush(): Promise<'enabled' | 'denied' | 'unsupported' | 'error'> {
   if (!isPushSupported()) return 'unsupported'
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return 'denied'
@@ -30,7 +30,13 @@ export async function enablePush(): Promise<'enabled' | 'denied' | 'unsupported'
     userVisibleOnly: true,
     applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
   })
-  await saveSubscriptionAction(extractKeys(sub))
+  const saved = await saveSubscriptionAction(extractKeys(sub))
+  if (saved && 'error' in saved) {
+    // Server rejected the subscription — undo the local one so the toggle
+    // doesn't read a browser subscription the server will never push to.
+    await sub.unsubscribe().catch(() => {})
+    return 'error'
+  }
   return 'enabled'
 }
 

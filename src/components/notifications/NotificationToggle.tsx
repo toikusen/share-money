@@ -8,6 +8,7 @@ type State = 'loading' | 'unsupported' | 'on' | 'off' | 'blocked'
 export function NotificationToggle() {
   const [state, setState] = useState<State>('loading')
   const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isPushSupported()) { setState('unsupported'); return }
@@ -20,12 +21,19 @@ export function NotificationToggle() {
 
   async function toggle() {
     setBusy(true)
+    setError(null)
     try {
       if (state === 'on') { await disablePush(); setState('off') }
       else {
         const res = await enablePush()
-        setState(res === 'enabled' ? 'on' : res === 'denied' ? 'blocked' : 'unsupported')
+        if (res === 'error') setError('訂閱無法儲存,請稍後再試')
+        setState(res === 'enabled' ? 'on' : res === 'denied' ? 'blocked' : res === 'unsupported' ? 'unsupported' : 'off')
       }
+    } catch (e) {
+      // Surface the real failure (e.g. pushManager.subscribe AbortError) —
+      // a silent throw here is indistinguishable from a dead button.
+      setError(e instanceof Error ? `開啟失敗:${e.message}` : '開啟失敗,請稍後再試')
+      setState('off')
     } finally { setBusy(false) }
   }
 
@@ -40,6 +48,7 @@ export function NotificationToggle() {
       <div>
         <p className="text-sm text-ink">推播通知</p>
         <p className="text-xs text-ink-4 mt-0.5">有人找你審核、或你的費用被退回/通過時提醒你</p>
+        {error && <p className="text-xs text-red-500 mt-0.5">{error}</p>}
       </div>
       <button
         type="button"
