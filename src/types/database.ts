@@ -99,6 +99,14 @@ export type ActivityLog = {
   created_at: string
 } & ActivityEvent
 
+export type PaymentAccount = {
+  user_id: string
+  bank_code: string
+  account_number: string
+  account_holder: string | null
+  updated_at: string
+}
+
 export type PushSubscriptionRow = {
   id: string
   user_id: string

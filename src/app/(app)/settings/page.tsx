@@ -1,5 +1,6 @@
 import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { DisplayNameForm } from '@/components/settings/DisplayNameForm'
+import { PaymentAccountForm } from '@/components/settings/PaymentAccountForm'
 import { SignOutButton } from '@/components/settings/SignOutButton'
 import { DeleteAccountButton } from '@/components/settings/DeleteAccountButton'
 import { NotificationToggle } from '@/components/notifications/NotificationToggle'
@@ -11,11 +12,14 @@ export default async function SettingsPage() {
   const user = await getAuthUser()
   if (!user) redirect('/login')
 
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('display_name')
-    .eq('id', user.id)
-    .single()
+  const [{ data: profile, error }, { data: paymentAccount }] = await Promise.all([
+    supabase.from('profiles').select('display_name').eq('id', user.id).single(),
+    supabase
+      .from('payment_accounts')
+      .select('bank_code, account_number, account_holder')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+  ])
 
   if (error) {
     console.error('Failed to load profile', error)
@@ -46,6 +50,14 @@ export default async function SettingsPage() {
           <p className="text-xs font-semibold text-ink-3 mb-2 px-1">顯示名稱</p>
           <div className="bg-white rounded-2xl shadow-card p-5">
             <DisplayNameForm initialName={profile.display_name} />
+          </div>
+        </section>
+
+        {/* Payment account */}
+        <section>
+          <p className="text-xs font-semibold text-ink-3 mb-2 px-1">收款帳戶</p>
+          <div className="bg-white rounded-2xl shadow-card p-5">
+            <PaymentAccountForm initial={paymentAccount} />
           </div>
         </section>
 

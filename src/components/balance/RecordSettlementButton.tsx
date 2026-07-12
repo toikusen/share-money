@@ -5,7 +5,15 @@ import { useRouter } from 'next/navigation'
 import { createSettlementAction } from '@/lib/actions/expenses'
 import { CURRENCIES, formatAmount } from '@/lib/utils/currency'
 import { toDateTimeLocalValue } from '@/lib/utils/datetime'
+import { bankLabel } from '@/lib/utils/banks'
+import { maskAccountNumber } from '@/lib/utils/payment-account'
 import type { Currency } from '@/types/database'
+
+type RecipientAccount = {
+  bank_code: string
+  account_number: string
+  account_holder: string | null
+}
 
 type Props = {
   tripId: string
@@ -14,6 +22,26 @@ type Props = {
   suggestedTWD: number
   foreignCurrency: Currency
   exchangeRate: number
+  recipientAccount: RecipientAccount | null
+}
+
+/** 複製到剪貼簿的小按鈕,按下後短暫顯示「已複製」 */
+function CopyChip({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(value).then(() => {
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        }).catch(() => {})
+      }}
+      className="rounded-full bg-accent/10 px-2.5 py-1 text-[11.5px] font-semibold text-accent hover:bg-accent/15 transition-colors"
+    >
+      {copied ? '已複製 ✓' : label}
+    </button>
+  )
 }
 
 const inputClass =
@@ -25,7 +53,7 @@ function suggestedFor(currency: Currency, suggestedTWD: number, exchangeRate: nu
   return CURRENCIES[currency].decimals === 0 ? String(Math.round(raw)) : raw.toFixed(2)
 }
 
-export function RecordSettlementButton({ tripId, toUserId, toName, suggestedTWD, foreignCurrency, exchangeRate }: Props) {
+export function RecordSettlementButton({ tripId, toUserId, toName, suggestedTWD, foreignCurrency, exchangeRate, recipientAccount }: Props) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -97,6 +125,27 @@ export function RecordSettlementButton({ tripId, toUserId, toName, suggestedTWD,
             取消
           </button>
         </div>
+
+        {recipientAccount ? (
+          <div className="bg-fill rounded-xl p-3.5 flex flex-col gap-2">
+            <p className="text-xs font-medium text-ink-3">{toName} 的收款帳戶</p>
+            <p className="text-sm text-ink">
+              {bankLabel(recipientAccount.bank_code)}
+              <span className="font-mono tabular-nums ml-2">{maskAccountNumber(recipientAccount.account_number)}</span>
+              {recipientAccount.account_holder && (
+                <span className="text-ink-3 ml-2">戶名 {recipientAccount.account_holder}</span>
+              )}
+            </p>
+            <div className="flex gap-2">
+              <CopyChip label="複製代碼" value={recipientAccount.bank_code} />
+              <CopyChip label="複製帳號" value={recipientAccount.account_number} />
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-ink-4 bg-fill rounded-xl px-3.5 py-2.5">
+            {toName} 尚未提供收款帳戶，請直接聯絡對方。
+          </p>
+        )}
 
         <div className="flex gap-2.5">
           <div className="flex-1">
