@@ -24,7 +24,10 @@ export default async function ReviewPage() {
       </div>
 
       {reviews.length === 0 ? (
-        <p className="text-center text-sm text-ink-4 py-16">沒有待審核的費用</p>
+        <div className="text-center py-16 flex flex-col gap-1.5">
+          <p className="text-sm text-ink-4">沒有待審核的費用</p>
+          <p className="text-xs text-ink-4">處理過的紀錄可以在各行程的「活動」頁查看</p>
+        </div>
       ) : (
         <ReviewList reviews={reviews} />
       )}
