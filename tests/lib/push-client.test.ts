@@ -9,10 +9,13 @@ vi.mock('@/lib/actions/push', () => ({
 
 const unsubscribe = vi.fn().mockResolvedValue(true)
 
-function stubBrowser(permission: NotificationPermission = 'granted') {
+function stubBrowser(permission: NotificationPermission = 'granted', keys: Record<string, ArrayBuffer | null> = {
+  p256dh: new Uint8Array([1, 2, 3]).buffer,
+  auth: new Uint8Array([4, 5, 6]).buffer,
+}) {
   const sub = {
     endpoint: 'https://push.example/ep',
-    toJSON: () => ({ keys: { p256dh: 'p', auth: 'a' } }),
+    getKey: (name: string) => keys[name] ?? null,
     unsubscribe,
   }
   vi.stubGlobal('window', { PushManager: function () {} })
@@ -43,8 +46,14 @@ describe('enablePush', () => {
     vi.mocked(saveSubscriptionAction).mockResolvedValue({ success: true })
     expect(await enablePush()).toBe('enabled')
     expect(saveSubscriptionAction).toHaveBeenCalledWith({
-      endpoint: 'https://push.example/ep', p256dh: 'p', auth: 'a',
+      endpoint: 'https://push.example/ep', p256dh: 'AQID', auth: 'BAUG',
     })
+  })
+
+  it('throws a named error when the browser provides no push keys', async () => {
+    stubBrowser('granted', { p256dh: null, auth: null })
+    await expect(enablePush()).rejects.toThrow('推播金鑰')
+    expect(saveSubscriptionAction).not.toHaveBeenCalled()
   })
 
   it('returns error and unsubscribes locally when server save fails', async () => {
