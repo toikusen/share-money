@@ -50,3 +50,16 @@ export function bankName(code: string): string {
 export function bankLabel(code: string): string {
   return `${bankName(code)} (${code})`
 }
+
+// 台/臺互通,使用者兩種都會打
+const fold = (s: string) => s.replace(/臺/g, '台')
+
+/** 自由輸入(「812」「台新」「812 台新銀行」)→ 銀行代號;無法唯一對應時回 null */
+export function resolveBankCode(raw: string): string | null {
+  const q = fold(raw.trim())
+  if (!q) return null
+  const exact = BANKS.find(b => q === b.code || q === fold(b.name) || q === `${b.code} ${fold(b.name)}`)
+  if (exact) return exact.code
+  const matches = BANKS.filter(b => b.code.includes(q) || fold(b.name).includes(q))
+  return matches.length === 1 ? matches[0].code : null
+}

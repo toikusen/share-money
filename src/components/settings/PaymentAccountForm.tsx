@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { upsertPaymentAccountAction, deletePaymentAccountAction } from '@/lib/actions/profile'
-import { BANKS } from '@/lib/utils/banks'
+import { BANKS, bankName, resolveBankCode } from '@/lib/utils/banks'
 import { ACCOUNT_HOLDER_MAX_LENGTH } from '@/lib/utils/payment-account'
 
 type Props = {
@@ -13,19 +14,28 @@ const inputClass =
   'w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink placeholder:text-ink-4 focus:outline-none focus:ring-2 focus:ring-accent/35'
 
 export function PaymentAccountForm({ initial }: Props) {
+  const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [deleted, setDeleted] = useState(false)
 
-  function handleSubmit(formData: FormData) {
+  // onSubmit instead of form action: React 19 auto-resets uncontrolled
+  // fields after a form action completes, wiping what the user just typed.
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
     setError(null)
     setSaved(false)
     setDeleted(false)
+    const code = resolveBankCode(String(formData.get('bank') ?? ''))
+    if (!code) { setError('找不到符合的銀行,請輸入代號或名稱後從清單選擇'); return }
+    formData.set('bank_code', code)
     startTransition(async () => {
       const result = await upsertPaymentAccountAction(formData)
       if (result?.error) { setError(result.error); return }
       setSaved(true)
+      router.refresh()
     })
   }
 
@@ -44,22 +54,26 @@ export function PaymentAccountForm({ initial }: Props) {
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-3">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex gap-2.5">
         <div className="w-[45%]">
-          <label htmlFor="bank_code" className="block text-xs font-medium text-ink-3 mb-1.5">銀行</label>
-          <select
-            id="bank_code"
-            name="bank_code"
+          <label htmlFor="bank" className="block text-xs font-medium text-ink-3 mb-1.5">銀行</label>
+          <input
+            id="bank"
+            name="bank"
+            type="text"
+            list="bank-options"
             required
-            defaultValue={initial?.bank_code ?? ''}
+            autoComplete="off"
+            defaultValue={initial ? `${initial.bank_code} ${bankName(initial.bank_code)}` : ''}
+            placeholder="代號或名稱"
             className={inputClass}
-          >
-            <option value="" disabled>選擇銀行</option>
+          />
+          <datalist id="bank-options">
             {BANKS.map(b => (
-              <option key={b.code} value={b.code}>{b.code} {b.name}</option>
+              <option key={b.code} value={`${b.code} ${b.name}`} />
             ))}
-          </select>
+          </datalist>
         </div>
         <div className="flex-1">
           <label htmlFor="account_number" className="block text-xs font-medium text-ink-3 mb-1.5">帳號</label>
