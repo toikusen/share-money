@@ -21,7 +21,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   const { id } = await params
   const supabase = await createClient()
 
-  const [user, { data: trip, error: tripError }, { data: memberships, error: membershipsError }, { data: expenseRecords, error: expensesError }] =
+  const [user, { data: trip, error: tripError }, { data: memberships, error: membershipsError }, { data: expenseRecords, error: expensesError }, { data: paymentAccounts }] =
     await Promise.all([
       getAuthUser(),
       supabase.from('trips').select('*').eq('id', id).single(),
@@ -30,8 +30,15 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
         .from('expenses')
         .select('id, amount, currency, paid_by, kind, expense_splits(expense_id, user_id, amount, approval_status)')
         .eq('trip_id', id),
+      supabase.rpc('get_trip_payment_accounts', { p_trip_id: id }),
     ])
   const meId = user!.id
+
+  // 收款帳戶拿不到就當沒分享,不影響結算頁其他功能
+  const accountOf = new Map(
+    ((paymentAccounts ?? []) as { user_id: string; bank_code: string; account_number: string; account_holder: string | null }[])
+      .map(a => [a.user_id, a])
+  )
 
   if (tripError && tripError.code !== 'PGRST116') {
     console.error('Failed to load trip for balance', { tripId: id, error: tripError })
@@ -213,6 +220,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
                               suggestedTWD={t.amountTWD}
                               foreignCurrency={trip.foreign_currency}
                               exchangeRate={trip.exchange_rate}
+                              recipientAccount={accountOf.get(t.to) ?? null}
                             />
                           )}
                         </span>
