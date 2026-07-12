@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: '隱私政策 | ShareMoney',
@@ -20,6 +21,9 @@ function Section({ title, id, children }: { title: string; id?: string; children
 export default function PrivacyPage() {
   return (
     <main className="max-w-lg mx-auto px-5 py-10">
+      <Link href="/settings" className="inline-block text-sm text-ink-3 hover:text-ink-2 mb-4">
+        ← 返回設定
+      </Link>
       <h1 className="text-xl font-bold text-ink mb-1">ShareMoney 隱私政策</h1>
       <p className="text-xs text-ink-3 mb-8">最後更新：{UPDATED_AT}</p>
 
