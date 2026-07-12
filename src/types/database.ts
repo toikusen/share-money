@@ -87,7 +87,10 @@ export type ActivityEvent =
   | { action: 'expense.created' | 'expense.deleted'; details: { title: string; amount: number; currency: Currency } }
   // title is the post-update title snapshot, for display
   | { action: 'expense.updated'; details: { title: string; old: ExpenseDiff; new: ExpenseDiff } }
+  // approved/rejected = the actor's own split, not full-expense approval
+  | { action: 'expense.approved' | 'expense.rejected'; details: { title: string; amount: number; currency: Currency } }
   | { action: 'settlement.created'; details: { amount: number; currency: Currency; to_user: string } }
+  | { action: 'settlement.confirmed' | 'settlement.rejected'; details: { amount: number; currency: Currency; from_user: string } }
   | { action: 'settlement.deleted'; details: { title: string; amount: number; currency: Currency; to_user: string } }
 
 export type ActivityAction = ActivityEvent['action']

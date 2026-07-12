@@ -317,6 +317,7 @@ AS $$
 DECLARE
   v_changed int;
   v_all_approved boolean;
+  v_expense expenses%ROWTYPE;
 BEGIN
   IF EXISTS (SELECT 1 FROM expense_splits WHERE expense_id = p_expense_id AND approval_status = 'rejected') THEN
     RAISE EXCEPTION 'EXPENSE_REJECTED';
@@ -327,6 +328,21 @@ BEGIN
   GET DIAGNOSTICS v_changed = ROW_COUNT;
 
   IF v_changed = 0 THEN RETURN NULL; END IF;
+
+  SELECT * INTO v_expense FROM expenses WHERE id = p_expense_id;
+  -- A settlement's only split is the receiver, so this approval IS the
+  -- confirmation. paid_by is the debtor who recorded it.
+  IF v_expense.kind = 'settlement' THEN
+    INSERT INTO activity_logs (trip_id, actor_id, action, details)
+    VALUES (v_expense.trip_id, auth.uid(), 'settlement.confirmed',
+            jsonb_build_object('amount', v_expense.amount, 'currency', v_expense.currency,
+                               'from_user', v_expense.paid_by));
+  ELSE
+    INSERT INTO activity_logs (trip_id, actor_id, action, details)
+    VALUES (v_expense.trip_id, auth.uid(), 'expense.approved',
+            jsonb_build_object('title', v_expense.title, 'amount', v_expense.amount,
+                               'currency', v_expense.currency));
+  END IF;
 
   SELECT bool_and(approval_status = 'approved') INTO v_all_approved
   FROM expense_splits WHERE expense_id = p_expense_id;
@@ -344,12 +360,31 @@ CREATE OR REPLACE FUNCTION reject_expense(p_expense_id uuid)
 RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE v_changed int;
+DECLARE
+  v_changed int;
+  v_expense expenses%ROWTYPE;
 BEGIN
   UPDATE expense_splits SET approval_status = 'rejected'
   WHERE expense_id = p_expense_id AND user_id = auth.uid() AND approval_status <> 'rejected';
   GET DIAGNOSTICS v_changed = ROW_COUNT;
-  RETURN v_changed > 0;
+
+  IF v_changed = 0 THEN RETURN false; END IF;
+
+  SELECT * INTO v_expense FROM expenses WHERE id = p_expense_id;
+  IF v_expense.kind = 'settlement' THEN
+    -- paid_by is the debtor who recorded the settlement.
+    INSERT INTO activity_logs (trip_id, actor_id, action, details)
+    VALUES (v_expense.trip_id, auth.uid(), 'settlement.rejected',
+            jsonb_build_object('amount', v_expense.amount, 'currency', v_expense.currency,
+                               'from_user', v_expense.paid_by));
+  ELSE
+    INSERT INTO activity_logs (trip_id, actor_id, action, details)
+    VALUES (v_expense.trip_id, auth.uid(), 'expense.rejected',
+            jsonb_build_object('title', v_expense.title, 'amount', v_expense.amount,
+                               'currency', v_expense.currency));
+  END IF;
+
+  RETURN true;
 END;
 $$;
 REVOKE EXECUTE ON FUNCTION reject_expense(uuid) FROM public, anon;
@@ -361,8 +396,9 @@ CREATE OR REPLACE FUNCTION approve_all_pending()
 RETURNS SETOF uuid LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_changed uuid[];
 BEGIN
-  RETURN QUERY
   WITH changed AS (
     UPDATE expense_splits es SET approval_status = 'approved'
     WHERE es.user_id = auth.uid()
@@ -373,7 +409,22 @@ BEGIN
       )
     RETURNING es.expense_id
   )
-  SELECT c.expense_id FROM (SELECT DISTINCT expense_id FROM changed) c
+  SELECT array_agg(DISTINCT expense_id) INTO v_changed FROM changed;
+
+  IF v_changed IS NULL THEN RETURN; END IF;
+
+  INSERT INTO activity_logs (trip_id, actor_id, action, details)
+  SELECT e.trip_id, auth.uid(),
+         CASE WHEN e.kind = 'settlement' THEN 'settlement.confirmed' ELSE 'expense.approved' END,
+         CASE WHEN e.kind = 'settlement'
+              THEN jsonb_build_object('amount', e.amount, 'currency', e.currency, 'from_user', e.paid_by)
+              ELSE jsonb_build_object('title', e.title, 'amount', e.amount, 'currency', e.currency)
+         END
+  FROM expenses e
+  WHERE e.id = ANY(v_changed);
+
+  RETURN QUERY
+  SELECT c.expense_id FROM unnest(v_changed) AS c(expense_id)
   WHERE (SELECT bool_and(approval_status = 'approved')
          FROM expense_splits WHERE expense_id = c.expense_id);
 END;

@@ -17,6 +17,8 @@ function dotClass(action: ActivityRow['action']): string {
     case 'expense.created': return 'bg-gain'
     case 'expense.updated': return 'bg-accent'
     case 'expense.deleted': return 'bg-owe'
+    case 'expense.rejected': return 'bg-owe'
+    case 'settlement.rejected': return 'bg-owe'
     default: return 'bg-edge'
   }
 }

@@ -22,10 +22,18 @@ export function formatActivityText(
       return `${actorName} 新增了『${event.details.title}』 ${formatAmount(event.details.amount, event.details.currency)}`
     case 'expense.deleted':
       return `${actorName} 刪除了『${event.details.title}』 ${formatAmount(event.details.amount, event.details.currency)}`
+    case 'expense.approved':
+      return `${actorName} 確認了『${event.details.title}』 ${formatAmount(event.details.amount, event.details.currency)}`
+    case 'expense.rejected':
+      return `${actorName} 拒絕了『${event.details.title}』 ${formatAmount(event.details.amount, event.details.currency)}`
     case 'expense.updated':
       return `${actorName} 編輯了『${event.details.title}』：${expenseChanges(event.details.old, event.details.new, nameOf).join('、')}`
     case 'settlement.created':
       return `${actorName} 記錄了還款 ${formatAmount(event.details.amount, event.details.currency)} 給 ${nameOf(event.details.to_user)}`
+    case 'settlement.confirmed':
+      return `${actorName} 確認了 ${nameOf(event.details.from_user)} 的還款 ${formatAmount(event.details.amount, event.details.currency)}`
+    case 'settlement.rejected':
+      return `${actorName} 拒絕了 ${nameOf(event.details.from_user)} 的還款 ${formatAmount(event.details.amount, event.details.currency)}`
     case 'settlement.deleted':
       return `${actorName} 刪除了給 ${nameOf(event.details.to_user)} 的還款 ${formatAmount(event.details.amount, event.details.currency)}`
   }

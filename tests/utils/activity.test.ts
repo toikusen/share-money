@@ -33,6 +33,16 @@ describe('formatActivityText', () => {
       .toBe('小明 刪除了『車票』 NT$120.00')
   })
 
+  it('expense.approved', () => {
+    expect(fmt({ action: 'expense.approved', details: { title: '晚餐', amount: 1500, currency: 'JPY' } }, '小華'))
+      .toBe('小華 確認了『晚餐』 ¥1,500')
+  })
+
+  it('expense.rejected', () => {
+    expect(fmt({ action: 'expense.rejected', details: { title: '晚餐', amount: 1500, currency: 'JPY' } }, '小華'))
+      .toBe('小華 拒絕了『晚餐』 ¥1,500')
+  })
+
   describe('expense.updated', () => {
     it('amount change (currency always included alongside amount)', () => {
       expect(fmt({
@@ -103,6 +113,24 @@ describe('formatActivityText', () => {
         nameOf,
       )
       expect(text).toBe('小明 記錄了還款 NT$500.00 給 小華')
+    })
+
+    it('formats settlement.confirmed', () => {
+      const text = formatActivityText(
+        { action: 'settlement.confirmed', details: { amount: 500, currency: 'TWD', from_user: 'u2' } },
+        '小明',
+        nameOf,
+      )
+      expect(text).toBe('小明 確認了 小華 的還款 NT$500.00')
+    })
+
+    it('formats settlement.rejected', () => {
+      const text = formatActivityText(
+        { action: 'settlement.rejected', details: { amount: 500, currency: 'TWD', from_user: 'u2' } },
+        '小明',
+        nameOf,
+      )
+      expect(text).toBe('小明 拒絕了 小華 的還款 NT$500.00')
     })
 
     it('formats settlement.deleted', () => {
