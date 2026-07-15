@@ -26,6 +26,22 @@ export function approvedExpenseIds(
   return new Set([...allApproved].filter(([, ok]) => ok).map(([id]) => id))
 }
 
+/**
+ * 「與我相關」= I paid it or I have a split.
+ * `share` is my split amount (0 when I only paid), for the 你墊/你攤 row label.
+ */
+export function myInvolvement(
+  expense: { paid_by: string; expense_splits: { user_id: string; amount: number }[] },
+  userId: string,
+): { related: boolean; paid: boolean; share: number } {
+  const split = expense.expense_splits.find(s => s.user_id === userId)
+  return {
+    related: expense.paid_by === userId || split !== undefined,
+    paid: expense.paid_by === userId,
+    share: split?.amount ?? 0,
+  }
+}
+
 /** Approval counts for the expense-list status badge, e.g. "待審 1/2". */
 export function approvalProgress(splits: { approval_status: ApprovalStatus }[]) {
   const total = splits.length

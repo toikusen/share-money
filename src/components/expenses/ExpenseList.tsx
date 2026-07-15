@@ -6,7 +6,7 @@ import { ExpenseDetailModal } from '@/components/expenses/ExpenseDetailModal'
 import { deleteExpenseAction } from '@/lib/actions/expenses'
 import { convertToTWD, formatAmount } from '@/lib/utils/currency'
 import { formatExpenseDate, formatExpenseDateTime, formatExpenseTime, groupByPaidDate } from '@/lib/utils/datetime'
-import { isExpenseApproved, isExpenseRejected, approvalProgress } from '@/lib/utils/expenses'
+import { isExpenseApproved, isExpenseRejected, approvalProgress, myInvolvement } from '@/lib/utils/expenses'
 import type { ApprovalStatus, Currency, ExpenseKind } from '@/types/database'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
@@ -60,7 +60,18 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
   const memberName = (userId?: string) => members.find(m => m.id === userId)?.display_name ?? '成員'
   const settlementLabel = (e: ExpenseDisplayRow) => `還款給 ${memberName(e.expense_splits[0]?.user_id)}`
 
-  const expenseGroups = groupByPaidDate(expenses, timeZone)
+  // 「全部 / 與我相關」切換;小計只算消費(還款不屬於墊付/應攤語意)
+  const [listMode, setListMode] = useState<'all' | 'mine'>('all')
+  const mine = (e: ExpenseDisplayRow) => myInvolvement(e, currentUserId)
+  const mineExpenses = expenses.filter(e => mine(e).related)
+  const mineSpend = mineExpenses.filter(e => e.kind === 'expense')
+  const minePaidTWD = mineSpend.reduce(
+    (a, e) => a + (mine(e).paid ? convertToTWD(e.amount, e.currency, exchangeRate) : 0), 0)
+  const mineShareTWD = mineSpend.reduce(
+    (a, e) => a + convertToTWD(mine(e).share, e.currency, exchangeRate), 0)
+
+  const visibleExpenses = listMode === 'mine' ? mineExpenses : expenses
+  const expenseGroups = groupByPaidDate(visibleExpenses, timeZone)
   const todayDate = formatExpenseDate(new Date().toISOString(), timeZone)
   const [toggled, setToggled] = useState<Set<string>>(new Set())
   const [detailExpenseId, setDetailExpenseId] = useState<string | null>(null)
@@ -135,6 +146,34 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
       />
     )}
     <div className="flex flex-col gap-2 mb-3">
+      {expenses.length > 0 && (
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex shrink-0 bg-fill rounded-[9px] p-0.5 gap-0.5">
+            {([['all', `全部 ${expenses.length}`], ['mine', `與我相關 ${mineExpenses.length}`]] as const).map(([mode, label]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setListMode(mode)}
+                aria-pressed={listMode === mode}
+                className={`text-xs font-semibold whitespace-nowrap rounded-[7px] px-3 py-[5px] transition-all ${
+                  listMode === mode ? 'bg-white text-ink shadow-card' : 'text-ink-3'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {listMode === 'mine' && (
+            <div className="flex flex-col items-end gap-px text-[11px] text-ink-3 font-mono tabular-nums whitespace-nowrap">
+              <span>你墊付 {formatAmount(minePaidTWD, 'TWD')}</span>
+              <span>應攤 {formatAmount(mineShareTWD, 'TWD')}</span>
+            </div>
+          )}
+        </div>
+      )}
+      {listMode === 'mine' && mineExpenses.length === 0 && expenses.length > 0 && (
+        <p className="text-center text-sm text-ink-4 py-8">沒有與你相關的費用</p>
+      )}
       {expenseGroups.map(group => {
         const open = isOpen(group.date)
         return (
@@ -205,9 +244,19 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                     <button
                       type="button"
                       onClick={() => setDetailExpenseId(expense.id)}
-                      className="text-[15px] font-semibold font-mono tabular-nums text-ink whitespace-nowrap"
+                      className="flex flex-col items-end gap-0.5"
                     >
-                      {formatAmount(expense.amount, expense.currency)}
+                      <span className="text-[15px] font-semibold font-mono tabular-nums text-ink whitespace-nowrap">
+                        {formatAmount(expense.amount, expense.currency)}
+                      </span>
+                      {listMode === 'mine' && expense.kind === 'expense' && (() => {
+                        const m = mine(expense)
+                        return (
+                          <span className={`text-[10.5px] font-semibold font-mono tabular-nums whitespace-nowrap ${m.paid ? 'text-gain' : 'text-ink-3'}`}>
+                            {m.paid ? `你墊 +${formatAmount(expense.amount - m.share, expense.currency)}` : `你攤 ${formatAmount(m.share, expense.currency)}`}
+                          </span>
+                        )
+                      })()}
                     </button>
                     {expense.created_by === currentUserId && (
                       <div className="flex items-center">

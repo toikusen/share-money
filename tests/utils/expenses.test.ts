@@ -6,6 +6,7 @@ import {
   isExpenseRejected,
   approvedExpenseIds,
   approvalProgress,
+  myInvolvement,
 } from '@/lib/utils/expenses'
 import type { ApprovalStatus } from '@/types/database'
 
@@ -116,5 +117,29 @@ describe('validateSettlementInput', () => {
   })
   it('rejects settling with yourself', () => {
     expect(validateSettlementInput({ ...base, toUser: 'a' })).toBe('不能還款給自己')
+  })
+})
+
+describe('myInvolvement', () => {
+  const exp = (paid_by: string, splits: Array<[string, number]>) => ({
+    paid_by,
+    expense_splits: splits.map(([user_id, amount]) => ({ user_id, amount })),
+  })
+
+  it('related when I paid, even with no split of mine', () => {
+    expect(myInvolvement(exp('me', [['other', 300]]), 'me'))
+      .toEqual({ related: true, paid: true, share: 0 })
+  })
+  it('related when I have a split but did not pay', () => {
+    expect(myInvolvement(exp('other', [['me', 120], ['other', 180]]), 'me'))
+      .toEqual({ related: true, paid: false, share: 120 })
+  })
+  it('paid and split both mine', () => {
+    expect(myInvolvement(exp('me', [['me', 150], ['other', 150]]), 'me'))
+      .toEqual({ related: true, paid: true, share: 150 })
+  })
+  it('unrelated when neither payer nor in splits', () => {
+    expect(myInvolvement(exp('a', [['b', 100]]), 'me'))
+      .toEqual({ related: false, paid: false, share: 0 })
   })
 })
