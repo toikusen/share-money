@@ -278,6 +278,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                             }}
                           />
                         )}
+                        {!(expense.kind === 'settlement' && isExpenseApproved(expense.expense_splits)) && (
                         <form
                           action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}
                           className="flex items-center"
@@ -295,6 +296,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
                             </svg>
                           </button>
                         </form>
+                        )}
                       </div>
                     )}
                   </div>

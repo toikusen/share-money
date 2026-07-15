@@ -22,6 +22,7 @@ const RPC_ERROR_MESSAGES: Record<string, string> = {
   SETTLE_SELF: '不能還款給自己',
   INVALID_AMOUNT: '金額無效',
   SETTLEMENT_NOT_EDITABLE: '還款紀錄不可編輯,請刪除後重新記錄',
+  SETTLEMENT_CONFIRMED: '對方已確認收款,此還款紀錄無法刪除',
 }
 
 function mapRpcError(message: string): string {

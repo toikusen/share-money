@@ -288,6 +288,13 @@ BEGIN
   IF v_expense.created_by <> auth.uid() THEN RAISE EXCEPTION 'NOT_OWNER'; END IF;
 
   IF v_expense.kind = 'settlement' THEN
+    -- A confirmed settlement is immutable history: no delete after the
+    -- receiver approved it.
+    IF EXISTS (
+      SELECT 1 FROM expense_splits
+      WHERE expense_id = p_expense_id AND approval_status = 'approved'
+    ) THEN RAISE EXCEPTION 'SETTLEMENT_CONFIRMED'; END IF;
+
     -- A settlement has exactly one split: the receiver. Fetch before delete
     -- so the log can say who the money was going to.
     SELECT user_id INTO v_to_user FROM expense_splits WHERE expense_id = p_expense_id LIMIT 1;

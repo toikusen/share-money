@@ -150,18 +150,35 @@ BEGIN
   IF v_count <> 1 THEN RAISE EXCEPTION 'FAIL: duplicate settlement.confirmed log'; END IF;
 END $$;
 
--- 10. creator deletes: settlement.deleted log with to_user
+-- 10. confirmed settlement is locked: even the creator cannot delete it
 SELECT set_config('request.jwt.claims',
   '{"sub":"a0000000-0000-4000-8000-000000000001","role":"authenticated"}', true);
 DO $$
-DECLARE v_id uuid; v_count int;
+DECLARE v_id uuid;
 BEGIN
   SELECT settlement_id INTO v_id FROM smoke_ids;
+  BEGIN
+    PERFORM delete_expense(v_id);
+    RAISE EXCEPTION 'FAIL: no error raised (delete confirmed settlement case)';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM NOT LIKE '%SETTLEMENT_CONFIRMED%' THEN RAISE; END IF;
+  END;
+  IF NOT EXISTS (SELECT 1 FROM expenses WHERE id = v_id) THEN
+    RAISE EXCEPTION 'FAIL: confirmed settlement was deleted';
+  END IF;
+END $$;
+
+-- 10b. pending settlement is still deletable: settlement.deleted log with to_user
+DO $$
+DECLARE v_id uuid; v_count int;
+BEGIN
+  v_id := create_settlement('d0000000-0000-4000-8000-000000000010',
+    'b0000000-0000-4000-8000-000000000002', 550, 'TWD', now());
   PERFORM delete_expense(v_id);
   SELECT count(*) INTO v_count FROM activity_logs
   WHERE action = 'settlement.deleted'
     AND details->>'to_user' = 'b0000000-0000-4000-8000-000000000002'
-    AND (details->>'amount')::numeric = 500;
+    AND (details->>'amount')::numeric = 550;
   IF v_count <> 1 THEN RAISE EXCEPTION 'FAIL: settlement.deleted log wrong'; END IF;
   IF EXISTS (SELECT 1 FROM expenses WHERE id = v_id) THEN
     RAISE EXCEPTION 'FAIL: expense row still exists';
