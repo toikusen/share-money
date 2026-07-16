@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { CURRENCIES, FOREIGN_CURRENCIES } from '@/lib/utils/currency'
 import { ledgerTypeMeta, type DateMode } from '@/lib/utils/ledger-type'
+import { toDateTimeLocalValue } from '@/lib/utils/datetime'
 import { LedgerTypeGrid } from '@/components/trips/LedgerTypeGrid'
 import { createTripAction } from '@/lib/actions/trips'
 import type { ForeignCurrency, LedgerType } from '@/types/database'
@@ -45,6 +46,7 @@ export function NewTripForm({ rates }: Props) {
   }
 
   const liveRate = rates[currency]
+  const today = toDateTimeLocalValue().slice(0, 10)
 
   async function handleSubmit(formData: FormData) {
     await createTripAction(formData)
@@ -90,13 +92,13 @@ export function NewTripForm({ rates }: Props) {
             ))}
           </div>
           {dateMode === 'single' && (
-            <input name="start_date" type="date" aria-label="日期" className={inputClass} />
+            <input name="start_date" type="date" defaultValue={today} aria-label="日期" className={inputClass} />
           )}
           {dateMode === 'range' && (
             <div className="flex items-center gap-2">
-              <input name="start_date" type="date" aria-label="開始日期" className={`${inputClass} flex-1`} />
+              <input name="start_date" type="date" defaultValue={today} aria-label="開始日期" className={`${inputClass} flex-1`} />
               <span className="text-ink-4 text-sm shrink-0" aria-hidden="true">–</span>
-              <input name="end_date" type="date" aria-label="結束日期" className={`${inputClass} flex-1`} />
+              <input name="end_date" type="date" defaultValue={today} aria-label="結束日期" className={`${inputClass} flex-1`} />
             </div>
           )}
           {dateMode !== 'none' && (
