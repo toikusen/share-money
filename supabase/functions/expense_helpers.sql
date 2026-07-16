@@ -1,14 +1,21 @@
 -- supabase/functions/expense_helpers.sql
 
--- create_trip
-CREATE OR REPLACE FUNCTION create_trip(p_name text, p_exchange_rate numeric)
+-- create_trip (0019: p_type + nullable currency pair; older signatures dropped in 0013/0019)
+CREATE OR REPLACE FUNCTION create_trip(
+  p_name             text,
+  p_exchange_rate    numeric DEFAULT NULL,
+  p_start_date       date    DEFAULT NULL,
+  p_end_date         date    DEFAULT NULL,
+  p_foreign_currency text    DEFAULT NULL,
+  p_type             text    DEFAULT 'travel'
+)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE v_trip_id uuid;
 BEGIN
-  INSERT INTO trips (name, created_by, exchange_rate)
-  VALUES (p_name, auth.uid(), p_exchange_rate)
+  INSERT INTO trips (name, created_by, exchange_rate, start_date, end_date, foreign_currency, type)
+  VALUES (p_name, auth.uid(), p_exchange_rate, p_start_date, p_end_date, p_foreign_currency, p_type)
   RETURNING id INTO v_trip_id;
 
   INSERT INTO trip_members (trip_id, user_id) VALUES (v_trip_id, auth.uid());
@@ -19,8 +26,8 @@ BEGIN
   RETURN v_trip_id;
 END;
 $$;
-REVOKE EXECUTE ON FUNCTION create_trip FROM public, anon;
-GRANT  EXECUTE ON FUNCTION create_trip TO authenticated;
+REVOKE EXECUTE ON FUNCTION create_trip(text, numeric, date, date, text, text) FROM public, anon;
+GRANT  EXECUTE ON FUNCTION create_trip(text, numeric, date, date, text, text) TO authenticated;
 
 -- join_trip
 CREATE OR REPLACE FUNCTION join_trip(p_invite_token uuid)
@@ -84,7 +91,7 @@ BEGIN
   END IF;
 
   SELECT foreign_currency INTO v_foreign FROM trips WHERE id = p_trip_id;
-  IF p_currency NOT IN (v_foreign, 'TWD') THEN
+  IF p_currency <> 'TWD' AND p_currency IS DISTINCT FROM v_foreign THEN
     RAISE EXCEPTION 'INVALID_CURRENCY';
   END IF;
 
@@ -170,7 +177,7 @@ BEGIN
   END IF;
 
   SELECT foreign_currency INTO v_foreign FROM trips WHERE id = v_old.trip_id;
-  IF p_currency NOT IN (v_foreign, 'TWD') THEN
+  IF p_currency <> 'TWD' AND p_currency IS DISTINCT FROM v_foreign THEN
     RAISE EXCEPTION 'INVALID_CURRENCY';
   END IF;
 
@@ -247,19 +254,23 @@ $$;
 REVOKE EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb, text) FROM public, anon;
 GRANT  EXECUTE ON FUNCTION update_expense_with_splits(uuid, text, numeric, text, uuid, timestamptz, jsonb, text) TO authenticated;
 
--- update_trip_exchange_rate
+-- update_trip_exchange_rate (0020: reject pure-TWD ledgers; FX on/off goes through update_trip_currency)
 CREATE OR REPLACE FUNCTION update_trip_exchange_rate(p_trip_id uuid, p_rate numeric)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER
 SET search_path = public
 AS $$
-DECLARE v_old_rate numeric;
+DECLARE
+  v_old_rate numeric;
+  v_foreign  text;
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM trip_members WHERE trip_id = p_trip_id AND user_id = auth.uid()) THEN
     RAISE EXCEPTION 'NOT_MEMBER';
   END IF;
-  IF p_rate <= 0 THEN RAISE EXCEPTION 'INVALID_RATE'; END IF;
+  IF p_rate IS NULL OR p_rate <= 0 THEN RAISE EXCEPTION 'INVALID_RATE'; END IF;
 
-  SELECT exchange_rate INTO v_old_rate FROM trips WHERE id = p_trip_id;
+  SELECT exchange_rate, foreign_currency INTO v_old_rate, v_foreign
+  FROM trips WHERE id = p_trip_id;
+  IF v_foreign IS NULL THEN RAISE EXCEPTION 'NO_FOREIGN_CURRENCY'; END IF;
   IF v_old_rate = p_rate THEN RETURN; END IF;
 
   UPDATE trips SET exchange_rate = p_rate WHERE id = p_trip_id;
@@ -475,7 +486,7 @@ BEGIN
   END IF;
 
   SELECT foreign_currency INTO v_foreign FROM trips WHERE id = p_trip_id;
-  IF p_currency NOT IN (v_foreign, 'TWD') THEN
+  IF p_currency <> 'TWD' AND p_currency IS DISTINCT FROM v_foreign THEN
     RAISE EXCEPTION 'INVALID_CURRENCY';
   END IF;
   IF p_currency IN ('JPY','KRW','VND') AND p_amount != floor(p_amount) THEN

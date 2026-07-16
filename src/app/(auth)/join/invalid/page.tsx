@@ -11,10 +11,10 @@ export default function InvalidTokenPage() {
         </div>
         <div>
           <h1 className="text-xl font-bold text-ink mb-1">連結無效</h1>
-          <p className="text-sm text-ink-3">此邀請連結不存在，請向行程建立者重新索取。</p>
+          <p className="text-sm text-ink-3">此邀請連結不存在，請向帳本建立者重新索取。</p>
         </div>
         <Link href="/trips" className="text-accent text-sm font-semibold hover:text-accent-deep transition-colors">
-          返回我的行程
+          返回我的帳本
         </Link>
       </div>
     </main>

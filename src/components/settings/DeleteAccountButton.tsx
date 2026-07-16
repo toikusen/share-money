@@ -24,7 +24,7 @@ export function DeleteAccountButton() {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-xs text-ink-3 leading-relaxed">
-        帳號與登入資訊將永久刪除，無法復原。你在各行程中的費用紀錄會保留給同行成員結算，名稱顯示為「已刪除使用者」。
+        帳號與登入資訊將永久刪除，無法復原。你在各帳本中的費用紀錄會保留給其他成員結算，名稱顯示為「已刪除使用者」。
       </p>
       {error && <p className="text-xs text-owe">{error}</p>}
       <div className="flex gap-2">

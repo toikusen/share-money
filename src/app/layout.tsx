@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'ShareMoney',
-  description: '旅遊分帳工具',
+  description: '分帳工具——旅遊、聚餐、社團、公司活動都好用',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

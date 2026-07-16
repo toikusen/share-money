@@ -40,14 +40,18 @@ type Props = {
   expenses: ExpenseDisplayRow[]
   members: MemberProfile[]
   currentUserId: string
-  exchangeRate: number
-  foreignCurrency: Currency
+  /** null = 純 TWD 帳本(換算時視為 1,數學等價) */
+  exchangeRate: number | null
+  foreignCurrency: Currency | null
+  /** 無日期帳本不做日期分組:單一清單、時間新→舊 */
+  groupByDate: boolean
 }
 
 // Device time zone never changes within a session; nothing to subscribe to.
 const subscribeNoop = () => () => {}
 
-export function ExpenseList({ tripId, expenses, members, currentUserId, exchangeRate, foreignCurrency }: Props) {
+export function ExpenseList({ tripId, expenses, members, currentUserId, exchangeRate, foreignCurrency, groupByDate }: Props) {
+  const rate = exchangeRate ?? 1
   // Server render falls back to Asia/Taipei (undefined); after hydration we
   // re-group and re-format in the viewer's device time zone so times match
   // what they typed.
@@ -66,9 +70,9 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
   const mineExpenses = expenses.filter(e => mine(e).related)
   const mineSpend = mineExpenses.filter(e => e.kind === 'expense')
   const minePaidTWD = mineSpend.reduce(
-    (a, e) => a + (mine(e).paid ? convertToTWD(e.amount, e.currency, exchangeRate) : 0), 0)
+    (a, e) => a + (mine(e).paid ? convertToTWD(e.amount, e.currency, rate) : 0), 0)
   const mineShareTWD = mineSpend.reduce(
-    (a, e) => a + convertToTWD(mine(e).share, e.currency, exchangeRate), 0)
+    (a, e) => a + convertToTWD(mine(e).share, e.currency, rate), 0)
 
   const visibleExpenses = listMode === 'mine' ? mineExpenses : expenses
   const expenseGroups = groupByPaidDate(visibleExpenses, timeZone)
@@ -122,7 +126,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
       const sum = spendItems.reduce((a, e) => a + e.amount, 0)
       return formatAmount(sum, spendItems[0].currency)
     }
-    const sum = spendItems.reduce((a, e) => a + convertToTWD(e.amount, e.currency, exchangeRate), 0)
+    const sum = spendItems.reduce((a, e) => a + convertToTWD(e.amount, e.currency, rate), 0)
     return `≈${formatAmount(sum, 'TWD')}`
   }
 
@@ -134,6 +138,102 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
     const base = `${spendCount} 筆 · ${groupSum(items)}`
     return settleCount > 0 ? `${base} · ${settleCount} 筆還款` : base
   }
+
+  // 列本體:分組模式顯示時刻,單一清單模式顯示完整日期時間
+  const renderRow = (expense: ExpenseDisplayRow) => (
+    <div
+      key={expense.id}
+      className={`flex justify-between items-center gap-3 px-4 py-3 ${isExpenseApproved(expense.expense_splits) ? '' : 'opacity-60'}`}
+    >
+      <button
+        type="button"
+        onClick={() => setDetailExpenseId(expense.id)}
+        className="min-w-0 flex-1 text-left"
+      >
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {expense.kind === 'settlement' && (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-accent shrink-0">
+              <path d="M17 3l4 4-4 4" />
+              <path d="M21 7H9" />
+              <path d="M7 21l-4-4 4-4" />
+              <path d="M3 17h12" />
+            </svg>
+          )}
+          <span className="font-medium text-[14.5px] text-ink break-words">
+            {expense.kind === 'settlement' ? settlementLabel(expense) : expense.title}
+          </span>
+          <StatusBadge splits={expense.expense_splits} />
+        </div>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-4 mt-0.5">
+          <time suppressHydrationWarning dateTime={expense.paid_at} title={formatExpenseDateTime(expense.paid_at, timeZone)}>
+            {groupByDate ? formatExpenseTime(expense.paid_at, timeZone) : formatExpenseDateTime(expense.paid_at, timeZone)}
+          </time>
+          <span aria-hidden="true">·</span>
+          <span>{expense.payer?.display_name} {expense.kind === 'settlement' ? '還' : '付'}</span>
+        </div>
+      </button>
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          type="button"
+          onClick={() => setDetailExpenseId(expense.id)}
+          className="flex flex-col items-end gap-0.5"
+        >
+          <span className="text-[15px] font-semibold font-mono tabular-nums text-ink whitespace-nowrap">
+            {formatAmount(expense.amount, expense.currency)}
+          </span>
+          {listMode === 'mine' && expense.kind === 'expense' && (() => {
+            const m = mine(expense)
+            return (
+              <span className={`text-[10.5px] font-semibold font-mono tabular-nums whitespace-nowrap ${m.paid ? 'text-gain' : 'text-ink-3'}`}>
+                {m.paid ? `你墊 +${formatAmount(expense.amount - m.share, expense.currency)}` : `你攤 ${formatAmount(m.share, expense.currency)}`}
+              </span>
+            )
+          })()}
+        </button>
+        {expense.created_by === currentUserId && (
+          <div className="flex items-center">
+            {expense.kind === 'expense' && (
+              <EditExpenseButton
+                tripId={tripId}
+                members={members}
+                currentUserId={currentUserId}
+                foreignCurrency={foreignCurrency}
+                expense={{
+                  id: expense.id,
+                  title: expense.title,
+                  amount: expense.amount,
+                  currency: expense.currency,
+                  paid_by: expense.paid_by,
+                  paid_at: expense.paid_at,
+                  note: expense.note,
+                  splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
+                }}
+              />
+            )}
+            {!(expense.kind === 'settlement' && isExpenseApproved(expense.expense_splits)) && (
+            <form
+              action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}
+              className="flex items-center"
+            >
+              <button
+                type="submit"
+                aria-label="刪除費用"
+                className="p-2 rounded-lg text-ink-4/70 hover:text-owe hover:bg-owe/5 transition-colors"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                  <path d="M10 11v6M14 11v6" />
+                  <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                </svg>
+              </button>
+            </form>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 
   return (
     <>
@@ -174,7 +274,12 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
       {listMode === 'mine' && mineExpenses.length === 0 && expenses.length > 0 && (
         <p className="text-center text-sm text-ink-4 py-8">沒有與你相關的費用</p>
       )}
-      {expenseGroups.map(group => {
+      {!groupByDate && visibleExpenses.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-card divide-y divide-line">
+          {visibleExpenses.map(renderRow)}
+        </div>
+      )}
+      {groupByDate && expenseGroups.map(group => {
         const open = isOpen(group.date)
         return (
         <div key={group.date} id={`day-${group.date}`} className="flex flex-col gap-2 scroll-mt-24">
@@ -208,100 +313,7 @@ export function ExpenseList({ tripId, expenses, members, currentUserId, exchange
           {/* 同一天的費用進同一張卡,髮絲線分隔 */}
           {open && (
             <div className="bg-white rounded-2xl shadow-card divide-y divide-line">
-              {group.items.map(expense => (
-                <div
-                  key={expense.id}
-                  className={`flex justify-between items-center gap-3 px-4 py-3 ${isExpenseApproved(expense.expense_splits) ? '' : 'opacity-60'}`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setDetailExpenseId(expense.id)}
-                    className="min-w-0 flex-1 text-left"
-                  >
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {expense.kind === 'settlement' && (
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="text-accent shrink-0">
-                          <path d="M17 3l4 4-4 4" />
-                          <path d="M21 7H9" />
-                          <path d="M7 21l-4-4 4-4" />
-                          <path d="M3 17h12" />
-                        </svg>
-                      )}
-                      <span className="font-medium text-[14.5px] text-ink break-words">
-                        {expense.kind === 'settlement' ? settlementLabel(expense) : expense.title}
-                      </span>
-                      <StatusBadge splits={expense.expense_splits} />
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-ink-4 mt-0.5">
-                      <time suppressHydrationWarning dateTime={expense.paid_at} title={formatExpenseDateTime(expense.paid_at, timeZone)}>
-                        {formatExpenseTime(expense.paid_at, timeZone)}
-                      </time>
-                      <span aria-hidden="true">·</span>
-                      <span>{expense.payer?.display_name} {expense.kind === 'settlement' ? '還' : '付'}</span>
-                    </div>
-                  </button>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setDetailExpenseId(expense.id)}
-                      className="flex flex-col items-end gap-0.5"
-                    >
-                      <span className="text-[15px] font-semibold font-mono tabular-nums text-ink whitespace-nowrap">
-                        {formatAmount(expense.amount, expense.currency)}
-                      </span>
-                      {listMode === 'mine' && expense.kind === 'expense' && (() => {
-                        const m = mine(expense)
-                        return (
-                          <span className={`text-[10.5px] font-semibold font-mono tabular-nums whitespace-nowrap ${m.paid ? 'text-gain' : 'text-ink-3'}`}>
-                            {m.paid ? `你墊 +${formatAmount(expense.amount - m.share, expense.currency)}` : `你攤 ${formatAmount(m.share, expense.currency)}`}
-                          </span>
-                        )
-                      })()}
-                    </button>
-                    {expense.created_by === currentUserId && (
-                      <div className="flex items-center">
-                        {expense.kind === 'expense' && (
-                          <EditExpenseButton
-                            tripId={tripId}
-                            members={members}
-                            currentUserId={currentUserId}
-                            foreignCurrency={foreignCurrency}
-                            expense={{
-                              id: expense.id,
-                              title: expense.title,
-                              amount: expense.amount,
-                              currency: expense.currency,
-                              paid_by: expense.paid_by,
-                              paid_at: expense.paid_at,
-                              note: expense.note,
-                              splits: expense.expense_splits.map(s => ({ user_id: s.user_id, amount: s.amount })),
-                            }}
-                          />
-                        )}
-                        {!(expense.kind === 'settlement' && isExpenseApproved(expense.expense_splits)) && (
-                        <form
-                          action={deleteExpenseAction.bind(null, expense.id, tripId) as unknown as (formData: FormData) => Promise<void>}
-                          className="flex items-center"
-                        >
-                          <button
-                            type="submit"
-                            aria-label="刪除費用"
-                            className="p-2 rounded-lg text-ink-4/70 hover:text-owe hover:bg-owe/5 transition-colors"
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                              <path d="M10 11v6M14 11v6" />
-                              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                            </svg>
-                          </button>
-                        </form>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
+              {group.items.map(renderRow)}
             </div>
           )}
         </div>

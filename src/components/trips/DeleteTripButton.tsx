@@ -11,7 +11,7 @@ export function DeleteTripButton({ action, label = '刪除', iconOnly }: DeleteT
     <form
       action={action}
       onSubmit={(event) => {
-        if (!confirm('確定要刪除這個行程嗎？所有費用與分帳資料都會一併刪除。')) {
+        if (!confirm('確定要刪除這個帳本嗎？所有費用與分帳資料都會一併刪除。')) {
           event.preventDefault()
         }
       }}

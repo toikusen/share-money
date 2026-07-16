@@ -20,7 +20,8 @@ type Props = {
   toUserId: string
   toName: string
   suggestedTWD: number
-  foreignCurrency: Currency
+  /** null = 純 TWD 帳本:幣別切換隱藏,一律 TWD */
+  foreignCurrency: Currency | null
   exchangeRate: number
   recipientAccount: RecipientAccount | null
 }
@@ -157,17 +158,19 @@ export function RecordSettlementButton({ tripId, toUserId, toName, suggestedTWD,
               className={`${inputClass} font-mono tabular-nums`}
             />
           </div>
-          <div>
-            <label htmlFor="settle-currency" className="block text-xs font-medium text-ink-3 mb-1.5">幣別</label>
-            <select
-              id="settle-currency"
-              value={currency} onChange={e => switchCurrency(e.target.value as Currency)}
-              className="bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
-            >
-              <option value="TWD">TWD</option>
-              <option value={foreignCurrency}>{foreignCurrency}</option>
-            </select>
-          </div>
+          {foreignCurrency && (
+            <div>
+              <label htmlFor="settle-currency" className="block text-xs font-medium text-ink-3 mb-1.5">幣別</label>
+              <select
+                id="settle-currency"
+                value={currency} onChange={e => switchCurrency(e.target.value as Currency)}
+                className="bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
+              >
+                <option value="TWD">TWD</option>
+                <option value={foreignCurrency}>{foreignCurrency}</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div>

@@ -43,7 +43,7 @@ export default async function LoginPage({
         <h1 className="text-3xl font-bold tracking-tight mb-1 select-none text-ink">
           share<span className="text-ink-4 font-normal mx-1">·</span>money
         </h1>
-        <p className="text-sm text-ink-3">旅遊分帳，輕鬆不傷感情</p>
+        <p className="text-sm text-ink-3">分帳記帳，輕鬆不傷感情</p>
       </div>
 
       {/* Login card */}

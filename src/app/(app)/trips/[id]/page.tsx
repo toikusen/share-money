@@ -13,6 +13,8 @@ import { EditTripInfoButton } from '@/components/trips/EditTripInfoButton'
 import { calculateMemberStats } from '@/lib/utils/balance'
 import { isExpenseApproved } from '@/lib/utils/expenses'
 import { avatarBg, avatarFg, avatarChar } from '@/lib/utils/avatar'
+import { formatTripDateRange } from '@/lib/utils/datetime'
+import { LedgerTypeIcon } from '@/components/trips/LedgerTypeIcon'
 import Link from 'next/link'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
@@ -46,13 +48,13 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   if (tripError && tripError.code !== 'PGRST116') {
     console.error('Failed to load trip', { tripId: id, error: tripError })
-    throw new Error('無法載入行程')
+    throw new Error('無法載入帳本')
   }
   if (!trip) notFound()
 
   if (membershipsError) {
     console.error('Failed to load trip members', { tripId: id, error: membershipsError })
-    throw new Error('無法載入行程成員')
+    throw new Error('無法載入帳本成員')
   }
 
   const members = (memberships?.map(m => m.profiles).filter(Boolean) ?? []) as unknown as MemberProfile[]
@@ -64,7 +66,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
 
   const expenseRows = (expenses ?? []) as unknown as ExpenseDisplayRow[]
   // Currency is only switchable before any expense exists; fetch live rates just for that case.
-  const foreignRates = expenseRows.length === 0 ? await fetchForeignRates() : null
+  const foreignRates = trip.foreign_currency && expenseRows.length === 0 ? await fetchForeignRates() : null
   const inviteUrl = `${siteUrl}/join/${trip.invite_token}`
   const canDeleteTrip = trip.created_by === user!.id
 
@@ -74,12 +76,20 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   const splitRows = approvedRows.flatMap(e =>
     e.expense_splits.map(s => ({ expense_id: e.id, user_id: s.user_id, amount: s.amount }))
   )
-  const stats = calculateMemberStats(statRows, splitRows, trip.exchange_rate)
+  // 純 TWD 帳本沒有匯率,傳 1 數學上等價(金額本來就是 TWD)
+  const stats = calculateMemberStats(statRows, splitRows, trip.exchange_rate ?? 1)
   const myNet = stats.find(s => s.userId === user!.id)?.netTWD ?? 0
   const settled = Math.abs(myNet) < 0.005
   const netWord = settled ? '已結清' : myNet > 0 ? '你應收' : '你應付'
   const netClass = settled ? 'text-ink-3' : myNet > 0 ? 'text-gain' : 'text-owe'
   const netAmount = settled ? '—' : `NT$${Math.round(Math.abs(myNet)).toLocaleString('zh-TW')}`
+
+  // 副標:有值才顯示,用 · 串接(匯率僅外幣帳本)
+  const metaSuffix = [
+    members.length > 0 ? `${members.length} 人` : '',
+    trip.foreign_currency ? `1 ${trip.foreign_currency} = ${trip.exchange_rate} TWD` : '',
+  ].filter(Boolean).join(' · ')
+  const subtitle = [formatTripDateRange(trip.start_date, trip.end_date), metaSuffix].filter(Boolean).join(' · ')
 
   async function updateRate(formData: FormData) {
     'use server'
@@ -98,26 +108,32 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
-          行程
+          帳本
         </Link>
 
         <div className="flex items-start justify-between gap-2">
-          {canDeleteTrip ? (
-            <EditTripInfoButton
-              tripId={id}
-              initialName={trip.name}
-              initialStartDate={trip.start_date}
-              initialEndDate={trip.end_date}
-            />
-          ) : (
-            <div>
-              <h1 className="text-[23px] font-bold tracking-tight text-ink leading-snug">{trip.name}</h1>
-            </div>
-          )}
+          <div className="flex items-start gap-3 min-w-0">
+            <LedgerTypeIcon type={trip.type} size={42} />
+            {canDeleteTrip ? (
+              <EditTripInfoButton
+                tripId={id}
+                initialName={trip.name}
+                initialType={trip.type}
+                initialStartDate={trip.start_date}
+                initialEndDate={trip.end_date}
+                metaSuffix={metaSuffix}
+              />
+            ) : (
+              <div>
+                <h1 className="text-[23px] font-bold tracking-tight text-ink leading-snug">{trip.name}</h1>
+                {subtitle && <p className="text-[12.5px] text-ink-3 mt-0.5">{subtitle}</p>}
+              </div>
+            )}
+          </div>
           {canDeleteTrip && (
             <DeleteTripButton
               action={deleteTripAction.bind(null, id) as (formData: FormData) => Promise<void>}
-              label="刪除行程"
+              label="刪除帳本"
               iconOnly
             />
           )}
@@ -141,15 +157,17 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         </span>
       </Link>
 
-      {/* 每日支出(點長條跳到該日明細) */}
-      <DailySpendChart
-        expenses={approvedRows
-          .filter(e => e.kind === 'expense')
-          .map(e => ({ paid_at: e.paid_at, amount: e.amount, currency: e.currency }))}
-        exchangeRate={trip.exchange_rate}
-        startDate={trip.start_date}
-        endDate={trip.end_date}
-      />
+      {/* 每日支出(點長條跳到該日明細)。無日期帳本清單不分組,長條沒有可跳的錨點,整張圖不顯示。 */}
+      {(trip.start_date || trip.end_date) && (
+        <DailySpendChart
+          expenses={approvedRows
+            .filter(e => e.kind === 'expense')
+            .map(e => ({ paid_at: e.paid_at, amount: e.amount, currency: e.currency }))}
+          exchangeRate={trip.exchange_rate ?? 1}
+          startDate={trip.start_date}
+          endDate={trip.end_date}
+        />
+      )}
 
       {/* 成員 + 邀請 */}
       <div className="flex items-center justify-between mt-3">
@@ -169,12 +187,12 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         <InviteCard inviteUrl={inviteUrl} />
       </div>
 
-      {/* 匯率(安靜的工具列)。無費用時可連幣別一起改；有費用後幣別鎖定，只改匯率。 */}
-      {foreignRates ? (
+      {/* 匯率(安靜的工具列,純 TWD 帳本整條不出現)。無費用時可連幣別一起改；有費用後幣別鎖定，只改匯率。 */}
+      {trip.foreign_currency && (foreignRates ? (
         <TripCurrencyEditor
           tripId={id}
           currency={trip.foreign_currency as ForeignCurrency}
-          rate={trip.exchange_rate}
+          rate={trip.exchange_rate!}
           rates={foreignRates}
         />
       ) : (
@@ -184,13 +202,13 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
             name="rate"
             type="number"
             step="0.0001"
-            defaultValue={trip.exchange_rate}
+            defaultValue={trip.exchange_rate!}
             className="w-20 bg-fill border-0 rounded-md px-2 py-1 text-xs text-ink text-right font-mono tabular-nums focus:outline-none focus:ring-2 focus:ring-accent/35"
           />
           <span>TWD</span>
           <button type="submit" className="ml-1 text-accent hover:text-accent-deep text-xs font-medium transition-colors">更新</button>
         </form>
-      )}
+      ))}
 
       {/* Expenses */}
       <section className="mt-7">
@@ -223,6 +241,7 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           currentUserId={user!.id}
           exchangeRate={trip.exchange_rate}
           foreignCurrency={trip.foreign_currency}
+          groupByDate={!!(trip.start_date || trip.end_date)}
         />
       </section>
     </main>

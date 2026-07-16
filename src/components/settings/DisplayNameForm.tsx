@@ -35,7 +35,7 @@ export function DisplayNameForm({ initialName }: { initialName: string }) {
           defaultValue={initialName}
           className="w-full bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
         />
-        <p className="text-xs text-ink-4 mt-1.5">其他成員會在行程與分帳中看到這個名稱</p>
+        <p className="text-xs text-ink-4 mt-1.5">其他成員會在帳本與分帳中看到這個名稱</p>
       </div>
 
       {error && <p className="text-sm text-owe">{error}</p>}

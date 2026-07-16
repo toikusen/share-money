@@ -13,9 +13,9 @@ export function formatActivityText(
 ): string {
   switch (event.action) {
     case 'trip.created':
-      return `${actorName} 建立了行程`
+      return `${actorName} 建立了帳本`
     case 'member.joined':
-      return `${actorName} 加入了行程`
+      return `${actorName} 加入了帳本`
     case 'trip.rate_updated':
       return `${actorName} 將匯率從 ${event.details.old_rate} 改為 ${event.details.new_rate}`
     case 'expense.created':

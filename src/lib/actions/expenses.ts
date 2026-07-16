@@ -10,13 +10,13 @@ import { pendingRecipients, approvalNeededPayload, rejectedPayload, approvedPayl
 import { formatAmount } from '@/lib/utils/currency'
 
 const RPC_ERROR_MESSAGES: Record<string, string> = {
-  NOT_MEMBER: '你不是此行程成員',
+  NOT_MEMBER: '你不是此帳本成員',
   NOT_OWNER: '只有建立者可以編輯或刪除此費用',
-  PAID_BY_NOT_MEMBER: '付款人不是行程成員',
-  SPLIT_USER_NOT_MEMBER: '分擔成員中有非行程成員',
+  PAID_BY_NOT_MEMBER: '付款人不是帳本成員',
+  SPLIT_USER_NOT_MEMBER: '分擔成員中有非帳本成員',
   SPLIT_SUM_MISMATCH: '分擔金額總和不等於費用金額',
   SPLIT_NOT_INTEGER: '此幣別金額必須為整數',
-  INVALID_CURRENCY: '幣別與此行程不符',
+  INVALID_CURRENCY: '幣別與此帳本不符',
   PAID_AT_REQUIRED: '請選擇付款時間',
   EXPENSE_REJECTED: '此費用已被拒絕,請等建立者修改後再審核',
   SETTLE_SELF: '不能還款給自己',

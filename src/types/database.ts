@@ -5,6 +5,9 @@ export type ForeignCurrency = Exclude<Currency, 'TWD'>
 
 export type ExpenseKind = 'expense' | 'settlement'
 
+/** Ledger type — display and form defaults only, never affects settlement math. */
+export type LedgerType = 'travel' | 'club' | 'company' | 'dining' | 'household' | 'other'
+
 export type Profile = {
   id: string
   display_name: string
@@ -16,12 +19,14 @@ export type Trip = {
   id: string
   name: string
   created_by: string
-  exchange_rate: number
+  /** null = pure-TWD ledger (FX off); always null together with foreign_currency */
+  exchange_rate: number | null
   invite_token: string
   created_at: string
   start_date: string | null
   end_date: string | null
-  foreign_currency: Currency
+  foreign_currency: Currency | null
+  type: LedgerType
 }
 
 export type TripMember = {

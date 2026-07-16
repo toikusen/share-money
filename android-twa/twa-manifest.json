@@ -1,7 +1,7 @@
 {
   "packageId": "com.tuyucheng.sharemoney",
   "host": "share-money.tuyucheng0407.workers.dev",
-  "name": "ShareMoney 旅遊分帳",
+  "name": "ShareMoney 分帳",
   "launcherName": "ShareMoney",
   "display": "standalone",
   "themeColor": "#4F61C9",

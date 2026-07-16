@@ -5,30 +5,40 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { foreignToTwdRate, FOREIGN_CURRENCIES } from '@/lib/utils/currency'
-import type { ForeignCurrency } from '@/types/database'
+import { LEDGER_TYPE_VALUES } from '@/lib/utils/ledger-type'
+import type { ForeignCurrency, LedgerType } from '@/types/database'
 
 export async function createTripAction(formData: FormData) {
   const name = formData.get('name') as string
-  const rateStr = formData.get('exchange_rate') as string
-  const exchangeRate = parseFloat(rateStr)
-  const startDate = (formData.get('start_date') as string) || null
-  const endDate = (formData.get('end_date') as string) || null
+  const type = formData.get('type') as string
+  const dateMode = formData.get('date_mode') as string
+  let startDate = (formData.get('start_date') as string) || null
+  let endDate = (formData.get('end_date') as string) || null
+  if (dateMode === 'single') endDate = startDate
+  if (dateMode === 'none') { startDate = null; endDate = null }
 
-  if (!name?.trim()) return { error: '請輸入行程名稱' }
-  if (isNaN(exchangeRate) || exchangeRate <= 0) return { error: '請輸入有效匯率' }
+  if (!name?.trim()) return { error: '請輸入帳本名稱' }
+  if (!(LEDGER_TYPE_VALUES as readonly string[]).includes(type)) return { error: '請選擇帳本類型' }
 
-  const foreignCurrency = formData.get('foreign_currency') as string
-  if (!(FOREIGN_CURRENCIES as readonly string[]).includes(foreignCurrency)) {
-    return { error: '請選擇有效外幣' }
+  // FX off = no foreign_currency field submitted → both null (pure-TWD ledger)
+  const foreignCurrency = (formData.get('foreign_currency') as string) || null
+  let exchangeRate: number | null = null
+  if (foreignCurrency !== null) {
+    if (!(FOREIGN_CURRENCIES as readonly string[]).includes(foreignCurrency)) {
+      return { error: '請選擇有效外幣' }
+    }
+    exchangeRate = parseFloat(formData.get('exchange_rate') as string)
+    if (isNaN(exchangeRate) || exchangeRate <= 0) return { error: '請輸入有效匯率' }
   }
 
   const supabase = await createClient()
   const { data, error } = await supabase.rpc('create_trip', {
     p_name: name.trim(),
+    p_type: type as LedgerType,
     p_exchange_rate: exchangeRate,
     p_foreign_currency: foreignCurrency,
-    ...(startDate ? { p_start_date: startDate } : {}),
-    ...(endDate ? { p_end_date: endDate } : {}),
+    p_start_date: startDate,
+    p_end_date: endDate,
   })
 
   if (error) return { error: error.message }
@@ -37,17 +47,25 @@ export async function createTripAction(formData: FormData) {
 
 export async function updateTripInfoAction(tripId: string, formData: FormData) {
   const name = formData.get('name') as string
-  const startDate = (formData.get('start_date') as string) || null
-  const endDate = (formData.get('end_date') as string) || null
+  const type = (formData.get('type') as string) || null
+  const dateMode = formData.get('date_mode') as string
+  let startDate = (formData.get('start_date') as string) || null
+  let endDate = (formData.get('end_date') as string) || null
+  if (dateMode === 'single') endDate = startDate
+  if (dateMode === 'none') { startDate = null; endDate = null }
 
-  if (!name?.trim()) return { error: '請輸入行程名稱' }
+  if (!name?.trim()) return { error: '請輸入帳本名稱' }
+  if (type !== null && !(LEDGER_TYPE_VALUES as readonly string[]).includes(type)) {
+    return { error: '請選擇帳本類型' }
+  }
 
   const supabase = await createClient()
   const { error } = await supabase.rpc('update_trip_info', {
     p_trip_id: tripId,
     p_name: name.trim(),
-    ...(startDate ? { p_start_date: startDate } : {}),
-    ...(endDate ? { p_end_date: endDate } : {}),
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_type: type as LedgerType | null,
   })
 
   if (error) return { error: error.message }
@@ -82,7 +100,10 @@ export async function updateExchangeRateAction(tripId: string, rate: number) {
     p_trip_id: tripId,
     p_rate: rate,
   })
-  if (error) return { error: error.message }
+  if (error) {
+    if (error.message.includes('NO_FOREIGN_CURRENCY')) return { error: '此帳本未使用外幣' }
+    return { error: error.message }
+  }
   revalidatePath(`/trips/${tripId}`)
   revalidatePath(`/trips/${tripId}/balance`)
   return { success: true }
@@ -121,7 +142,7 @@ export async function deleteTripAction(tripId: string): Promise<void> {
     .eq('created_by', user.id)
 
   if (error) throw new Error(error.message)
-  if (count === 0) throw new Error('只有行程建立者可以刪除行程')
+  if (count === 0) throw new Error('只有帳本建立者可以刪除帳本')
 
   revalidatePath('/trips')
   redirect('/trips')

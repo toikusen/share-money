@@ -21,7 +21,8 @@ type Props = {
   pendingLabel: string
   members: Profile[]
   currentUserId: string
-  foreignCurrency: Currency
+  /** null = 純 TWD 帳本:幣別切換整個隱藏,一律 TWD */
+  foreignCurrency: Currency | null
   initial?: ExpenseFormValues
   onSubmit: (values: ExpenseFormValues) => Promise<{ error?: string; success?: boolean } | undefined>
   onClose: () => void
@@ -36,7 +37,7 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
 
   const [title, setTitle] = useState(initial?.title ?? '')
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
-  const [currency, setCurrency] = useState<Currency>(initial?.currency ?? foreignCurrency)
+  const [currency, setCurrency] = useState<Currency>(initial?.currency ?? foreignCurrency ?? 'TWD')
   const [paidBy, setPaidBy] = useState(initial?.paidBy ?? currentUserId)
   const [paidAt, setPaidAt] = useState(() => toDateTimeLocalValue(initial?.paidAt))
   const [note, setNote] = useState(initial?.note ?? '')
@@ -201,17 +202,19 @@ export function ExpenseForm({ heading, submitLabel, pendingLabel, members, curre
               className={`${inputClass} font-mono tabular-nums`}
             />
           </div>
-          <div>
-            <label htmlFor="ef-currency" className="block text-xs font-medium text-ink-3 mb-1.5">幣別</label>
-            <select
-              id="ef-currency"
-              value={currency} onChange={e => setCurrency(e.target.value as Currency)}
-              className="bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
-            >
-              <option value={foreignCurrency}>{foreignCurrency}</option>
-              <option value="TWD">TWD</option>
-            </select>
-          </div>
+          {foreignCurrency && (
+            <div>
+              <label htmlFor="ef-currency" className="block text-xs font-medium text-ink-3 mb-1.5">幣別</label>
+              <select
+                id="ef-currency"
+                value={currency} onChange={e => setCurrency(e.target.value as Currency)}
+                className="bg-fill border-0 rounded-[10px] px-3 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-accent/35"
+              >
+                <option value={foreignCurrency}>{foreignCurrency}</option>
+                <option value="TWD">TWD</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div>

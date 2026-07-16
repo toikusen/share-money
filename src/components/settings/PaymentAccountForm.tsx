@@ -107,7 +107,7 @@ export function PaymentAccountForm({ initial }: Props) {
         />
       </div>
 
-      <p className="text-xs text-ink-4">與你同行程的成員在結算時可以看到這個帳戶，方便轉帳給你。</p>
+      <p className="text-xs text-ink-4">與你同帳本的成員在結算時可以看到這個帳戶，方便轉帳給你。</p>
 
       {error && <p className="text-sm text-owe">{error}</p>}
       {saved && <p className="text-sm text-gain">已更新</p>}

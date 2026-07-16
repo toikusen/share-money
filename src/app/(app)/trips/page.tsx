@@ -14,7 +14,9 @@ export default async function TripsPage() {
     getPendingReviews(),
     supabase
       .from('trips')
-      .select('*, trip_members!inner(user_id)')
+      // trip_members!inner is filtered to my row (membership check), so it
+      // can't count members — the aliased second embed does that.
+      .select('*, trip_members!inner(user_id), members:trip_members(count)')
       .eq('trip_members.user_id', user.id)
       .order('created_at', { ascending: false }),
   ])
@@ -22,7 +24,7 @@ export default async function TripsPage() {
 
   if (tripsError) {
     console.error('Failed to load trips', tripsError)
-    throw new Error('無法載入行程清單')
+    throw new Error('無法載入帳本')
   }
 
   return (
@@ -74,7 +76,7 @@ export default async function TripsPage() {
 
       {/* Page heading + action */}
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-[21px] font-bold tracking-tight text-ink">我的行程</h1>
+        <h1 className="text-[21px] font-bold tracking-tight text-ink">我的帳本</h1>
         <Link
           href="/trips/new"
           className="inline-flex items-center gap-1.5 bg-accent text-white text-[13px] font-semibold px-4 py-2 rounded-full hover:bg-accent-deep active:scale-95 transition-all"
@@ -82,12 +84,12 @@ export default async function TripsPage() {
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
             <path d="M12 5v14M5 12h14"/>
           </svg>
-          新增行程
+          新帳本
         </Link>
       </div>
 
       {trips?.length === 0 ? (
-        <p className="text-center text-sm text-ink-4 py-16">還沒有行程，點右上角建立第一個</p>
+        <p className="text-center text-sm text-ink-4 py-16">還沒有帳本，點右上角建立第一個</p>
       ) : (
         <div className="flex flex-col gap-2.5">
           {trips?.map(trip => <TripCard key={trip.id} trip={trip} currentUserId={user.id} />)}

@@ -34,7 +34,7 @@ export default async function SettingsPage() {
       <div className="flex items-center gap-2.5 mb-6">
         <Link
           href="/trips"
-          aria-label="返回行程"
+          aria-label="返回帳本"
           className="p-2 -ml-2 rounded-lg text-ink-3 hover:text-ink-2 transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

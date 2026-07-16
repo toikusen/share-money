@@ -42,13 +42,13 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
 
   if (tripError && tripError.code !== 'PGRST116') {
     console.error('Failed to load trip for balance', { tripId: id, error: tripError })
-    throw new Error('無法載入行程')
+    throw new Error('無法載入帳本')
   }
   if (!trip) notFound()
 
   if (membershipsError) {
     console.error('Failed to load trip members for balance', { tripId: id, error: membershipsError })
-    throw new Error('無法載入行程成員')
+    throw new Error('無法載入帳本成員')
   }
 
   const profileMap = new Map(
@@ -77,8 +77,10 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   const spendIds = new Set(spendRows.map(e => e.id))
   const spendSplits = approvedSplits.filter(s => spendIds.has(s.expense_id))
 
-  const stats = calculateMemberStats(spendRows, spendSplits, trip.exchange_rate)
-  const net = calculateNetBalances(approvedRows, approvedSplits, trip.exchange_rate)
+  // 純 TWD 帳本沒有匯率;傳 1 數學上等價(金額本來就是 TWD),不動 utils 簽名
+  const exchangeRate = trip.exchange_rate ?? 1
+  const stats = calculateMemberStats(spendRows, spendSplits, exchangeRate)
+  const net = calculateNetBalances(approvedRows, approvedSplits, exchangeRate)
   const transfers = minimizeTransfers(net)
 
   // 已記錄、待收款方確認的還款——顯示提示避免重複記
@@ -95,13 +97,13 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   )
 
   const totalTWD = spendRows.reduce(
-    (sum, e) => sum + convertToTWD(e.amount, e.currency, trip.exchange_rate),
+    (sum, e) => sum + convertToTWD(e.amount, e.currency, exchangeRate),
     0
   )
 
-  // 同時顯示行程幣別:TWD ÷ 匯率 = 外幣
+  // 同時顯示帳本幣別:TWD ÷ 匯率 = 外幣(純 TWD 帳本不顯示)
   const fc = trip.foreign_currency
-  const foreign = (twdAmount: number) => formatAmount(Math.abs(twdAmount) / trip.exchange_rate, fc)
+  const foreign = (twdAmount: number) => (fc ? formatAmount(Math.abs(twdAmount) / exchangeRate, fc) : '')
 
   const flowTransfers = transfers.map(t => ({
     ...t,
@@ -118,10 +120,10 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
   const heroAmount = settled ? '已結清' : twd(myNet)
   const heroClass = settled ? 'text-ink-3' : myNet > 0 ? 'text-gain' : 'text-owe'
   const heroSub = settled
-    ? `不需任何轉帳 · 行程總費用 ${twd(totalTWD)}`
+    ? `不需任何轉帳 · 總費用 ${twd(totalTWD)}`
     : myNet > 0
-      ? `來自 ${toMeCount} 筆轉帳 · 行程總費用 ${twd(totalTWD)}`
-      : `需轉出 ${fromMeCount} 筆 · 行程總費用 ${twd(totalTWD)}`
+      ? `來自 ${toMeCount} 筆轉帳 · 總費用 ${twd(totalTWD)}`
+      : `需轉出 ${fromMeCount} 筆 · 總費用 ${twd(totalTWD)}`
 
   // 計算過程:墊付 vs 應攤(淨額由高到低)
   const chartRows = [...allStats]
@@ -140,7 +142,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
       <div className="flex items-center gap-2.5 mb-5">
         <Link
           href={`/trips/${id}`}
-          aria-label="返回行程"
+          aria-label="返回帳本"
           className="p-2 -ml-2 rounded-lg text-ink-3 hover:text-ink-2 transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -161,7 +163,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
             <span className={`text-[32px] font-bold font-mono tabular-nums tracking-tight ${heroClass}`}>
               {heroAmount}
             </span>
-            {!settled && (
+            {!settled && fc && (
               <span className="text-[12.5px] text-ink-4 font-mono tabular-nums">≈ {foreign(myNet)}</span>
             )}
             <span className="text-xs text-ink-4">{heroSub}</span>
@@ -210,7 +212,9 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
                             }`}>
                               {twd(t.amountTWD)}
                             </span>
-                            <span className="text-[11px] text-ink-4 font-mono tabular-nums">≈ {foreign(t.amountTWD)}</span>
+                            {fc && (
+                              <span className="text-[11px] text-ink-4 font-mono tabular-nums">≈ {foreign(t.amountTWD)}</span>
+                            )}
                           </span>
                           {t.from === meId && (
                             <RecordSettlementButton
@@ -219,7 +223,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
                               toName={t.toName}
                               suggestedTWD={t.amountTWD}
                               foreignCurrency={trip.foreign_currency}
-                              exchangeRate={trip.exchange_rate}
+                              exchangeRate={exchangeRate}
                               recipientAccount={accountOf.get(t.to) ?? null}
                             />
                           )}
@@ -249,7 +253,7 @@ export default async function BalancePage({ params }: { params: Promise<{ id: st
               <PaidVsShareChart rows={chartRows} />
               <div className="h-px bg-line my-3" />
               <p className="text-[11.5px] text-ink-4">
-                行程總費用 {twd(totalTWD)}（≈ {foreign(totalTWD)}） · {profileMap.size} 位成員 · 1 {trip.foreign_currency} = {trip.exchange_rate} TWD
+                總費用 {twd(totalTWD)}{fc && `（≈ ${foreign(totalTWD)}）`} · {profileMap.size} 位成員{fc && ` · 1 ${fc} = ${trip.exchange_rate} TWD`}
               </p>
             </CalcDisclosure>
           </section>

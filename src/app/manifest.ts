@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: 'ShareMoney',
     short_name: 'ShareMoney',
-    description: '旅遊分帳工具',
+    description: '分帳工具——旅遊、聚餐、社團、公司活動都好用',
     start_url: '/',
     display: 'standalone',
     background_color: '#FAFAFA',

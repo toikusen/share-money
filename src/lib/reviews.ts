@@ -71,7 +71,7 @@ export async function getPendingReviews(): Promise<PendingReview[]> {
       return {
         expenseId: r.expense.id,
         tripId: r.expense.trip_id,
-        tripName: r.expense.trip?.name ?? '行程',
+        tripName: r.expense.trip?.name ?? '帳本',
         title: r.expense.title,
         amount: r.expense.amount,
         currency: r.expense.currency,

@@ -3,6 +3,7 @@ import {
   formatExpenseDate,
   formatExpenseDateTime,
   formatExpenseTime,
+  formatTripDateRange,
   groupByPaidDate,
 } from '@/lib/utils/datetime'
 
@@ -64,5 +65,23 @@ describe('groupByPaidDate', () => {
 
   it('returns an empty array for no rows', () => {
     expect(groupByPaidDate([], 'Asia/Taipei')).toEqual([])
+  })
+})
+
+describe('formatTripDateRange', () => {
+  it('formats a range', () => {
+    expect(formatTripDateRange('2026-06-01', '2026-06-07')).toBe('6/1 – 6/7')
+  })
+
+  it('collapses a single day (start === end) to one date', () => {
+    expect(formatTripDateRange('2026-06-01', '2026-06-01')).toBe('6/1')
+  })
+
+  it('returns empty for no dates', () => {
+    expect(formatTripDateRange(null, null)).toBe('')
+  })
+
+  it('formats open-ended start', () => {
+    expect(formatTripDateRange('2026-06-01', null)).toBe('6/1 起')
   })
 })

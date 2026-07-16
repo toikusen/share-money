@@ -28,8 +28,8 @@ export default async function JoinPage({ params }: { params: Promise<{ token: st
           </svg>
         </div>
         <div>
-          <h1 className="text-xl font-bold text-ink mb-1">加入行程</h1>
-          <p className="text-sm text-ink-3">點下方按鈕加入此行程</p>
+          <h1 className="text-xl font-bold text-ink mb-1">加入帳本</h1>
+          <p className="text-sm text-ink-3">點下方按鈕加入此帳本</p>
         </div>
         <form action={join} className="w-full">
           <button

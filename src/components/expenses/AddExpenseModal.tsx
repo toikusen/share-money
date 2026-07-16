@@ -9,7 +9,7 @@ type Props = {
   tripId: string
   members: Profile[]
   currentUserId: string
-  foreignCurrency: Currency
+  foreignCurrency: Currency | null
   compact?: boolean
 }
 

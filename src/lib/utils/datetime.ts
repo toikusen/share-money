@@ -34,9 +34,10 @@ function formatLocalDate(isoDate: string): string {
   )
 }
 
-/** Returns a human-readable trip date range, e.g. "6/1 – 6/7" or "6/1 起". */
+/** Returns a human-readable trip date range, e.g. "6/1 – 6/7", "6/1"(單日) or "6/1 起". */
 export function formatTripDateRange(startDate: string | null, endDate: string | null): string {
   if (!startDate && !endDate) return ''
+  if (startDate && endDate && startDate === endDate) return formatLocalDate(startDate)
   if (startDate && endDate) return `${formatLocalDate(startDate)} – ${formatLocalDate(endDate)}`
   if (startDate) return `${formatLocalDate(startDate)} 起`
   return `– ${formatLocalDate(endDate!)}`

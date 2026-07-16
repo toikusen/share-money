@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: '隱私政策 | ShareMoney',
-  description: 'ShareMoney 旅遊分帳工具的隱私政策與帳號刪除說明',
+  description: 'ShareMoney 分帳工具的隱私政策與帳號刪除說明',
 }
 
 const UPDATED_AT = '2026-07-07'
@@ -29,7 +29,7 @@ export default function PrivacyPage() {
 
       <Section title="我們是誰">
         <p>
-          ShareMoney 是一個旅遊分帳工具，協助你與同行成員記錄旅程費用並結算分帳。本政策說明我們如何蒐集、使用與保護你的資料。
+          ShareMoney 是一個分帳工具，協助你與其他成員記錄共同費用並結算分帳。本政策說明我們如何蒐集、使用與保護你的資料。
         </p>
       </Section>
 
@@ -39,13 +39,13 @@ export default function PrivacyPage() {
             <strong className="text-ink">帳號資訊</strong>：你以 Google 帳號登入時提供的電子郵件地址、顯示名稱與頭像。
           </li>
           <li>
-            <strong className="text-ink">你輸入的內容</strong>：行程名稱、費用紀錄、分帳明細與相關備註。
+            <strong className="text-ink">你輸入的內容</strong>：帳本名稱、費用紀錄、分帳明細與相關備註。
           </li>
           <li>
             <strong className="text-ink">推播訂閱資訊</strong>：若你開啟通知，我們會儲存瀏覽器產生的推播訂閱端點，用於傳送費用相關通知。
           </li>
           <li>
-            <strong className="text-ink">收款帳戶（選填）</strong>：你可以在設定中儲存銀行代碼、帳號與戶名，僅用於在結算時向與你同行程的成員顯示收款方式，方便對方轉帳給你。此資料只有同行程成員可見，可隨時在設定中刪除；刪除帳號時也會一併永久刪除。我們不會蒐集網路銀行帳號密碼、OTP 或金融卡資訊。
+            <strong className="text-ink">收款帳戶（選填）</strong>：你可以在設定中儲存銀行代碼、帳號與戶名，僅用於在結算時向與你同帳本的成員顯示收款方式，方便對方轉帳給你。此資料只有同帳本成員可見，可隨時在設定中刪除；刪除帳號時也會一併永久刪除。我們不會蒐集網路銀行帳號密碼、OTP 或金融卡資訊。
           </li>
         </ul>
         <p>我們不蒐集精確位置、通訊錄、廣告識別碼，也不進行任何廣告追蹤。</p>
@@ -53,7 +53,7 @@ export default function PrivacyPage() {
 
       <Section title="資料的使用方式">
         <ul className="list-disc pl-5 flex flex-col gap-1.5">
-          <li>提供分帳功能：向同一行程的成員顯示你的名稱、頭像與費用紀錄。</li>
+          <li>提供分帳功能：向同一帳本的成員顯示你的名稱、頭像與費用紀錄。</li>
           <li>傳送通知：在有新費用或分帳變動時推播提醒（可隨時在設定中關閉）。</li>
           <li>我們不會將你的資料出售或提供給第三方作行銷用途。</li>
         </ul>
@@ -73,7 +73,7 @@ export default function PrivacyPage() {
         <ul className="list-disc pl-5 flex flex-col gap-1.5">
           <li>你的登入帳號、電子郵件、顯示名稱、頭像、收款帳戶與推播訂閱會被永久刪除。</li>
           <li>
-            你在共同行程中的費用與分帳紀錄屬於行程成員的共同帳本，會以匿名形式（顯示為「已刪除使用者」）保留，讓其他成員仍能正確結算；這些紀錄不再包含任何可識別你的資訊。
+            你在共同帳本中的費用與分帳紀錄屬於帳本成員共有，會以匿名形式（顯示為「已刪除使用者」）保留，讓其他成員仍能正確結算；這些紀錄不再包含任何可識別你的資訊。
           </li>
         </ul>
         <p>

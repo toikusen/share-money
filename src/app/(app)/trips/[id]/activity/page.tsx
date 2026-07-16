@@ -41,13 +41,13 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
 
   if (tripError && tripError.code !== 'PGRST116') {
     console.error('Failed to load trip for activity', { tripId: id, error: tripError })
-    throw new Error('無法載入行程')
+    throw new Error('無法載入帳本')
   }
   if (!trip) notFound()
 
   if (membershipsError) {
     console.error('Failed to load trip members for activity', { tripId: id, error: membershipsError })
-    throw new Error('無法載入行程成員')
+    throw new Error('無法載入帳本成員')
   }
 
   const profileMap = new Map(
@@ -70,7 +70,7 @@ export default async function ActivityPage({ params }: { params: Promise<{ id: s
       <div className="flex items-center gap-2.5 mb-1">
         <Link
           href={`/trips/${id}`}
-          aria-label="返回行程"
+          aria-label="返回帳本"
           className="p-2 -ml-2 rounded-lg text-ink-3 hover:text-ink-2 transition-colors"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

@@ -11,11 +11,11 @@ function fmt(event: ActivityEvent, actor = '小明') {
 
 describe('formatActivityText', () => {
   it('trip.created', () => {
-    expect(fmt({ action: 'trip.created', details: {} })).toBe('小明 建立了行程')
+    expect(fmt({ action: 'trip.created', details: {} })).toBe('小明 建立了帳本')
   })
 
   it('member.joined', () => {
-    expect(fmt({ action: 'member.joined', details: {} }, '小美')).toBe('小美 加入了行程')
+    expect(fmt({ action: 'member.joined', details: {} }, '小美')).toBe('小美 加入了帳本')
   })
 
   it('trip.rate_updated', () => {
