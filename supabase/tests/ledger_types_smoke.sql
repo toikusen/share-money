@@ -133,6 +133,19 @@ BEGIN
   END;
 END $$;
 
+-- 9. update_trip_currency refuses once expenses exist — this HAS_EXPENSES guard
+--    is why update_trip_exchange_rate deliberately can't turn FX off (0020).
+--    The dining trip gained an expense in section 6.
+DO $$
+DECLARE v_trip uuid;
+BEGIN
+  SELECT twd_trip_id INTO v_trip FROM smoke_ids;
+  PERFORM update_trip_currency(v_trip, NULL, NULL);
+  RAISE EXCEPTION 'FAIL: FX toggled on a trip with expenses';
+EXCEPTION WHEN raise_exception THEN
+  IF SQLERRM NOT LIKE '%HAS_EXPENSES%' THEN RAISE; END IF;
+END $$;
+
 DO $$ BEGIN RAISE NOTICE 'ledger types smoke: ALL PASS'; END $$;
 
 ROLLBACK;
