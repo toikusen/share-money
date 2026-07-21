@@ -48,6 +48,7 @@ yarn-error.log*
 # deployment/tooling state
 /.wrangler/
 /supabase/.temp/
+/scripts/session.json
 
 # typescript
 *.tsbuildinfo

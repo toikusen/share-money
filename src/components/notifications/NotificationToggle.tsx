@@ -11,12 +11,27 @@ export function NotificationToggle() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!isPushSupported()) { setState('unsupported'); return }
-    if (Notification.permission === 'denied') { setState('blocked'); return }
-    navigator.serviceWorker.getRegistration('/sw.js')
-      .then(reg => reg?.pushManager.getSubscription())
-      .then(sub => setState(sub ? 'on' : 'off'))
-      .catch(() => setState('off'))
+    let cancelled = false
+
+    async function readSubscription() {
+      let nextState: State = 'off'
+      if (!isPushSupported()) nextState = 'unsupported'
+      else if (Notification.permission === 'denied') nextState = 'blocked'
+      else {
+        try {
+          const reg = await navigator.serviceWorker.getRegistration('/sw.js')
+          const sub = await reg?.pushManager.getSubscription()
+          nextState = sub ? 'on' : 'off'
+        } catch {
+          nextState = 'off'
+        }
+      }
+
+      if (!cancelled) setState(nextState)
+    }
+
+    void readSubscription()
+    return () => { cancelled = true }
   }, [])
 
   async function toggle() {

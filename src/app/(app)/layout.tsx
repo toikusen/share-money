@@ -1,18 +1,25 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { getAuthUser } from '@/lib/supabase/server'
-import { RefreshOnFocus } from '@/components/realtime/RefreshOnFocus'
-import { RealtimeRefresher } from '@/components/realtime/RealtimeRefresher'
-import { NotificationPrompt } from '@/components/notifications/NotificationPrompt'
+import { DeferredAppEnhancements } from '@/components/realtime/DeferredAppEnhancements'
+import Loading from './loading'
 
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+async function AuthenticatedApp({ children }: { children: React.ReactNode }) {
   const user = await getAuthUser()
   if (!user) redirect('/login')
+
   return (
     <>
-      <RefreshOnFocus />
-      <RealtimeRefresher />
-      <NotificationPrompt />
+      <DeferredAppEnhancements />
       {children}
     </>
+  )
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <AuthenticatedApp>{children}</AuthenticatedApp>
+    </Suspense>
   )
 }

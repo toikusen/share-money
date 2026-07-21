@@ -1,6 +1,6 @@
 import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { TripCard } from '@/components/trips/TripCard'
-import { getPendingReviews } from '@/lib/reviews'
+import { getPendingReviewCount } from '@/lib/reviews'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
@@ -10,8 +10,8 @@ export default async function TripsPage() {
   if (!user) redirect('/login')
 
   // Single round trip: trips joined through my membership, in parallel with reviews
-  const [pendingReviews, { data: trips, error: tripsError }] = await Promise.all([
-    getPendingReviews(),
+  const [reviewCount, { data: trips, error: tripsError }] = await Promise.all([
+    getPendingReviewCount(),
     supabase
       .from('trips')
       // trip_members!inner is filtered to my row (membership check), so it
@@ -20,8 +20,6 @@ export default async function TripsPage() {
       .eq('trip_members.user_id', user.id)
       .order('created_at', { ascending: false }),
   ])
-  const reviewCount = pendingReviews.length
-
   if (tripsError) {
     console.error('Failed to load trips', tripsError)
     throw new Error('無法載入帳本')

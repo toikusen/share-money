@@ -85,3 +85,26 @@ export async function getPendingReviews(): Promise<PendingReview[]> {
     })
     .sort((a, b) => b.paidAt.localeCompare(a.paidAt))
 }
+
+/**
+ * Lightweight badge query for the ledger list. The full review projection
+ * joins trips, profiles, and every split; the startup screen only needs a
+ * number, so keep that work inside Postgres and return one integer.
+ */
+export async function getPendingReviewCount(): Promise<number> {
+  const supabase = await createClient()
+  const user = await getAuthUser()
+  if (!user) return 0
+
+  const { data, error } = await supabase.rpc('get_pending_review_count')
+  if (!error) return typeof data === 'number' ? data : Number(data ?? 0)
+
+  // Keep deploys backward-compatible if application code reaches production
+  // before the database migration. This path disappears once 0021 is applied.
+  if (error.code === 'PGRST202' || error.code === '42883') {
+    return (await getPendingReviews()).length
+  }
+
+  console.error('Failed to load pending review count', error)
+  throw new Error('無法載入待審數量')
+}

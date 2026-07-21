@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#4f61c9">
+    <title>ShareMoney — 離線</title>
+    <style>
+      :root { color-scheme: light; font-family: system-ui, sans-serif; }
+      body { min-height: 100vh; margin: 0; display: grid; place-items: center; background: #fafafa; color: #1c1d21; }
+      main { width: min(22rem, calc(100% - 3rem)); text-align: center; }
+      .mark { width: 3.5rem; height: 3.5rem; margin: 0 auto 1.25rem; border-radius: 1rem; display: grid; place-items: center; background: #4f61c9; color: white; font-size: 1.5rem; font-weight: 700; }
+      h1 { margin: 0 0 .5rem; font-size: 1.25rem; }
+      p { margin: 0; color: #777b83; font-size: .875rem; line-height: 1.6; }
+      button { margin-top: 1.5rem; border: 0; border-radius: 999px; padding: .7rem 1.2rem; background: #4f61c9; color: white; font: inherit; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true">$</div>
+      <h1>目前無法連線</h1>
+      <p>請檢查網路後再試一次。為了保護帳本資料，離線時不會儲存私人頁面。</p>
+      <button type="button" onclick="location.reload()">重新連線</button>
+    </main>
+  </body>
+</html>
