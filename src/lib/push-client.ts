@@ -37,7 +37,10 @@ export async function enablePush(): Promise<'enabled' | 'denied' | 'unsupported'
   const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   if (!vapidKey) throw new Error('推播金鑰未設定(NEXT_PUBLIC_VAPID_PUBLIC_KEY)')
 
-  await navigator.serviceWorker.register('/sw.js')
+  await navigator.serviceWorker.register('/sw.js', {
+    scope: '/',
+    updateViaCache: 'none',
+  })
   const reg = await navigator.serviceWorker.ready
   const sub = await reg.pushManager.subscribe({
     userVisibleOnly: true,

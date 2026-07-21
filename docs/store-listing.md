@@ -63,11 +63,21 @@ Play Store：手機截圖至少 2 張（16:9 或 9:16，最短邊 ≥ 320px、�
 4. 結算頁（誰付誰多少）
 5. 活動紀錄／通知
 
-產生方式：Chrome DevTools device mode 以 Pixel 尺寸（1080×2400）截圖即可。
+✅ 已完成（2026-07-15），檔案在 `docs/store-assets/`：
+
+| 檔案 | 內容 | 尺寸 |
+|---|---|---|
+| `screenshot-1-trips.png` | 行程列表 | 1080×2400 |
+| `screenshot-2-trip-detail.png` | 行程明細＋每日支出圖 | 1080×2400 |
+| `screenshot-3-balance.png` | 結算頁（建議轉帳） | 1080×2400 |
+| `screenshot-4-add-expense.png` | 記一筆（均攤） | 1080×2400 |
+| `feature-graphic.png` | 主題圖片 | 1024×500 |
+
+截圖用的示範資料（王小明／林小華／張小美、東京五日遊＋首爾三日行）
+存在正式 Supabase，帳號為 `demo-*@sharemoney.demo`（見 twa-android.md）。
 
 另需：
 - 應用程式圖示 512×512 PNG（已有 `public/icon-512.png`）
-- 主題圖片（feature graphic）1024×500 PNG — 待製作
 
 ## iOS 補充（後續）
 

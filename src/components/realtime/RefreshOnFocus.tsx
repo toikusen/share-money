@@ -13,8 +13,13 @@ export function RefreshOnFocus() {
 
   useEffect(() => {
     const gate = createThrottleGate(5000)
+    const mountedAt = Date.now()
     const refresh = () => {
       if (document.visibilityState !== 'visible') return
+      // Some installed PWAs/TWAs emit a focus event immediately after
+      // hydration. The server payload is already fresh, so do not fetch it a
+      // second time during the startup window.
+      if (Date.now() - mountedAt < 15_000) return
       if (gate()) router.refresh()
     }
     document.addEventListener('visibilitychange', refresh)

@@ -131,7 +131,7 @@ describe('splitWithRemainder', () => {
   })
 })
 
-import { CURRENCIES, FOREIGN_CURRENCIES, foreignToTwdRate } from '@/lib/utils/currency'
+import { FOREIGN_CURRENCIES, foreignToTwdRate } from '@/lib/utils/currency'
 
 describe('CURRENCIES table', () => {
   it('FOREIGN_CURRENCIES excludes TWD', () => {

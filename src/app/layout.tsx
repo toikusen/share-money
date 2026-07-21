@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import NextTopLoader from 'nextjs-toploader'
+import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-TW">
       <body className={`${inter.className} bg-surface text-ink min-h-screen`}>
         <NextTopLoader color="#4f61c9" height={2} showSpinner={false} shadow={false} />
+        <ServiceWorkerRegistration />
         {children}
       </body>
     </html>

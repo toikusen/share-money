@@ -20,6 +20,18 @@ bubblewrap build --skipPwaValidation
 注意：gradle 用的 SDK 路徑在 `android-twa/local.properties`（`sdk.dir` 指向標準 SDK root）；
 `~/.bubblewrap/config.json` 的 `androidSdkPath` 指向 `cmdline-tools/latest` 是給 bubblewrap 自己的路徑驗證用，兩者不同是刻意的。
 
+## 商店素材與示範資料（2026-07-15 完成）
+
+- 截圖 4 張＋feature graphic 已產出：`docs/store-assets/`（規格見 store-listing.md）
+- 示範資料在**正式 Supabase**：使用者 `demo-ming/demo-hua/demo-mei@sharemoney.demo`
+  （王小明／林小華／張小美）＋「東京五日遊」「首爾三日行」兩個行程。
+  UI 只有 Google 登入，這些帳號進不了 app，僅供截圖用（session cookie 注入）；
+  審查員用的測試帳號仍需另建一個真的 Google 帳號。
+- 重產截圖：跑 `scripts/seed-demo-data.mjs`（可重複執行；建資料＋換 session；輸出在已忽略的
+  `scripts/session.json`）→ 把 session JSON
+  以 `base64-` + base64url 編成 `sb-<ref>-auth-token` cookie 注入瀏覽器 → 360×800@3x 截圖。
+- 上架後可清示範資料：刪 trips（cascade）＋ auth.admin 刪三個 demo user。
+
 ## 剩餘步驟（需要 Google 帳號）— 詳細版
 
 > 選單名稱以 Play Console 2026 介面為準，小改版後位置可能略有不同。
@@ -119,5 +131,6 @@ bubblewrap build --skipPwaValidation
 - [x] migration 0011 已套用（帳號刪除功能）
 - [x] `/privacy` 正式站可存取
 - [x] assetlinks.json 正式站可存取（application/json）
+- [x] 商店素材：截圖 4 張＋feature graphic（`docs/store-assets/`）
 - [ ] Play App Signing SHA-256 回填後重新部署
 - [ ] 內部測試軌道實機跑過：登入、記帳、推播、刪除帳號

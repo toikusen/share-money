@@ -1,20 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { isPushSupported, enablePush } from '@/lib/push-client'
 
 const DISMISS_KEY = 'push-prompt-dismissed'
 
 export function NotificationPrompt() {
-  const [show, setShow] = useState(false)
+  const [show, setShow] = useState(() => (
+    isPushSupported()
+    && Notification.permission === 'default'
+    && !localStorage.getItem(DISMISS_KEY)
+  ))
   const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    if (!isPushSupported()) return
-    if (Notification.permission !== 'default') return
-    if (localStorage.getItem(DISMISS_KEY)) return
-    setShow(true)
-  }, [])
 
   if (!show) return null
 
