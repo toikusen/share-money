@@ -1,4 +1,5 @@
 // src/app/(auth)/login/page.tsx
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { getRequestSiteUrl, safeRedirectPath } from '@/lib/site-url'
 import { redirect } from 'next/navigation'
@@ -63,6 +64,18 @@ export default async function LoginPage({
           </button>
         </form>
       </div>
+
+      {/* Public content links — also what search/AdSense crawlers land on. */}
+      <p className="text-xs text-ink-3 leading-relaxed text-center max-w-sm mt-8">
+        旅遊、聚餐、社團活動、室友公費都能開一本帳：指定付款人與分攤成員、支援外幣匯率換算，
+        最後用最少的轉帳次數一鍵結清。
+      </p>
+      <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-xs text-ink-3 mt-4">
+        <Link href="/guide" className="hover:text-ink transition-colors">使用教學</Link>
+        <Link href="/settlement" className="hover:text-ink transition-colors">結算原理</Link>
+        <Link href="/faq" className="hover:text-ink transition-colors">常見問題</Link>
+        <Link href="/privacy" className="hover:text-ink transition-colors">隱私政策</Link>
+      </nav>
     </main>
   )
 }
