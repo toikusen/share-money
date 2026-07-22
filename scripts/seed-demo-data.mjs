@@ -42,43 +42,76 @@ console.log('users ok')
 const { data: oldTrips } = await admin.from('trips').select('id').eq('created_by', ming)
 if (oldTrips?.length) await admin.from('trips').delete().in('id', oldTrips.map(t => t.id))
 
-const { data: trip, error: te } = await admin.from('trips').insert({
-  name: '東京五日遊', created_by: ming, exchange_rate: 0.21,
-  foreign_currency: 'JPY', start_date: '2026-06-10', end_date: '2026-06-14',
-}).select().single()
-if (te) throw te
+const all = [ming, hua, mei]
+const D = (date, h) => `${date}T${String(h).padStart(2, '0')}:30:00+08:00`
 
-const me = await admin.from('trip_members').insert([ming, hua, mei].map(user_id => ({ trip_id: trip.id, user_id })))
-if (me.error) throw me.error
-console.log('trip ok', trip.id)
-
-const D = d => `2026-06-1${d}T0${3 + d}:30:00+09:00`
-const expenses = [
-  { title: 'Skyliner 機場快線', amount: 7590, currency: 'JPY', paid_by: ming, day: 0, split: [ming, hua, mei] },
-  { title: '淺草壽司晚餐', amount: 12600, currency: 'JPY', paid_by: hua, day: 0, split: [ming, hua, mei] },
-  { title: '迪士尼樂園門票', amount: 28500, currency: 'JPY', paid_by: ming, day: 1, split: [ming, hua, mei] },
-  { title: '一蘭拉麵', amount: 3180, currency: 'JPY', paid_by: mei, day: 1, split: [ming, hua, mei] },
-  { title: '飯店住宿四晚', amount: 96000, currency: 'JPY', paid_by: mei, day: 2, split: [ming, hua, mei] },
-  { title: '藥妝店伴手禮', amount: 8240, currency: 'JPY', paid_by: hua, day: 3, split: [ming, hua] },
-  { title: '桃園機場接送', amount: 1200, currency: 'TWD', paid_by: ming, day: 4, split: [ming, hua, mei] },
+// One ledger per type, so the store screenshots show the app is not travel-only.
+const ledgers = [
+  {
+    trip: {
+      name: '東京五日遊', type: 'travel', created_by: ming, exchange_rate: 0.21,
+      foreign_currency: 'JPY', start_date: '2026-06-10', end_date: '2026-06-14',
+    },
+    expenses: [
+      { title: 'Skyliner 機場快線', amount: 7590, currency: 'JPY', paid_by: ming, at: D('2026-06-10', 9), split: all },
+      { title: '淺草壽司晚餐', amount: 12600, currency: 'JPY', paid_by: hua, at: D('2026-06-10', 19), split: all },
+      { title: '迪士尼樂園門票', amount: 28500, currency: 'JPY', paid_by: ming, at: D('2026-06-11', 10), split: all },
+      { title: '一蘭拉麵', amount: 3180, currency: 'JPY', paid_by: mei, at: D('2026-06-11', 20), split: all },
+      { title: '飯店住宿四晚', amount: 96000, currency: 'JPY', paid_by: mei, at: D('2026-06-12', 15), split: all },
+      { title: '藥妝店伴手禮', amount: 8240, currency: 'JPY', paid_by: hua, at: D('2026-06-13', 16), split: [ming, hua] },
+      { title: '桃園機場接送', amount: 1200, currency: 'TWD', paid_by: ming, at: D('2026-06-14', 21), split: all },
+    ],
+  },
+  {
+    trip: { name: '週五燒肉聚餐', type: 'dining', created_by: ming, start_date: '2026-07-17' },
+    expenses: [
+      { title: '燒肉吃到飽', amount: 3840, currency: 'TWD', paid_by: hua, at: D('2026-07-17', 19), split: all },
+      { title: '續攤調酒', amount: 1260, currency: 'TWD', paid_by: ming, at: D('2026-07-17', 22), split: all },
+      { title: '計程車回家', amount: 320, currency: 'TWD', paid_by: mei, at: D('2026-07-17', 23), split: [hua, mei] },
+    ],
+  },
+  {
+    trip: { name: '室友公費', type: 'household', created_by: ming },
+    expenses: [
+      { title: '七月房租', amount: 24000, currency: 'TWD', paid_by: ming, at: D('2026-07-05', 10), split: all },
+      { title: '電費（兩個月）', amount: 2680, currency: 'TWD', paid_by: mei, at: D('2026-07-08', 11), split: all },
+      { title: '網路費', amount: 899, currency: 'TWD', paid_by: hua, at: D('2026-07-10', 9), split: all },
+      { title: '衛生紙、清潔用品', amount: 645, currency: 'TWD', paid_by: mei, at: D('2026-07-14', 20), split: all },
+    ],
+  },
+  {
+    trip: { name: '攝影社迎新', type: 'club', created_by: ming, start_date: '2026-07-12' },
+    expenses: [
+      { title: '場地租借', amount: 2500, currency: 'TWD', paid_by: ming, at: D('2026-07-12', 13), split: all },
+      { title: '飲料點心', amount: 1180, currency: 'TWD', paid_by: mei, at: D('2026-07-12', 14), split: all },
+    ],
+  },
 ]
 
-for (const e of expenses) {
-  const { data: exp, error: ee } = await admin.from('expenses').insert({
-    trip_id: trip.id, title: e.title, amount: e.amount, currency: e.currency,
-    paid_by: e.paid_by, created_by: e.paid_by, paid_at: D(e.day),
-  }).select().single()
-  if (ee) throw ee
-  const each = Math.floor(e.amount / e.split.length)
-  const splits = e.split.map((user_id, i) => ({
-    expense_id: exp.id, user_id,
-    amount: i === 0 ? e.amount - each * (e.split.length - 1) : each,
-    approval_status: 'approved',
-  }))
-  const { error: se } = await admin.from('expense_splits').insert(splits)
-  if (se) throw se
+for (const { trip: t, expenses } of ledgers) {
+  const { data: trip, error: te } = await admin.from('trips').insert(t).select().single()
+  if (te) throw te
+
+  const me = await admin.from('trip_members').insert(all.map(user_id => ({ trip_id: trip.id, user_id })))
+  if (me.error) throw me.error
+
+  for (const e of expenses) {
+    const { data: exp, error: ee } = await admin.from('expenses').insert({
+      trip_id: trip.id, title: e.title, amount: e.amount, currency: e.currency,
+      paid_by: e.paid_by, created_by: e.paid_by, paid_at: e.at,
+    }).select().single()
+    if (ee) throw ee
+    const each = Math.floor(e.amount / e.split.length)
+    const splits = e.split.map((user_id, i) => ({
+      expense_id: exp.id, user_id,
+      amount: i === 0 ? e.amount - each * (e.split.length - 1) : each,
+      approval_status: 'approved',
+    }))
+    const { error: se } = await admin.from('expense_splits').insert(splits)
+    if (se) throw se
+  }
+  console.log('ledger ok', t.name)
 }
-console.log('expenses ok')
 
 // sign in as 王小明 to mint a session for browser cookie injection
 const anon = createClient(url, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, { auth: { persistSession: false } })

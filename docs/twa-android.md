@@ -22,9 +22,10 @@ bubblewrap build --skipPwaValidation
 
 ## 商店素材與示範資料（2026-07-15 完成）
 
-- 截圖 4 張＋feature graphic 已產出：`docs/store-assets/`（規格見 store-listing.md）
+- 截圖 6 張＋feature graphic 已產出：`docs/store-assets/`（規格見 store-listing.md；
+  2026-07-22 重拍，改成多種帳本類型，不再只有旅遊）
 - 示範資料在**正式 Supabase**：使用者 `demo-ming/demo-hua/demo-mei@sharemoney.demo`
-  （王小明／林小華／張小美）＋「東京五日遊」「首爾三日行」兩個行程。
+  （王小明／林小華／張小美）＋東京五日遊／週五燒肉聚餐／室友公費／攝影社迎新四本帳。
   UI 只有 Google 登入，這些帳號進不了 app，僅供截圖用（session cookie 注入）；
   審查員用的測試帳號仍需另建一個真的 Google 帳號。
 - 重產截圖：跑 `scripts/seed-demo-data.mjs`（可重複執行；建資料＋換 session；輸出在已忽略的
@@ -73,7 +74,7 @@ bubblewrap build --skipPwaValidation
    （保留第二條 upload key 指紋，本機直裝 APK 測試會用到）
 4. 部署：`npx opennextjs-cloudflare build && npx opennextjs-cloudflare deploy`
 5. 驗證：https://developers.google.com/digital-asset-links/tools/generator
-   填 host `share-money.tuyucheng0407.workers.dev`、package `com.tuyucheng.sharemoney`、貼上指紋 → Test statement
+   填 host `sharemoney.cc`、package `com.tuyucheng.sharemoney`、貼上指紋 → Test statement
 6. 手機上**移除重裝** app（Android 會快取驗證結果）→ 開啟後上方不應出現 Chrome 網址列
 
 ### 4. 主商店資訊（成長 → 商店發布 → 主商店資訊）
@@ -99,14 +100,14 @@ bubblewrap build --skipPwaValidation
 
 | 項目 | 答案 |
 |---|---|
-| 隱私政策 | `https://share-money.tuyucheng0407.workers.dev/privacy` |
+| 隱私政策 | `https://sharemoney.cc/privacy` |
 | 應用程式存取權 | 「全部或部分功能受限」→ 提供**測試用 Google 帳號**（帳密 + 說明「以此 Google 帳號登入即可」；審查員要能登入） |
 | 廣告 | 不含廣告 |
 | 內容分級 | 填問卷：類別選「公用程式/生產力」，暴力/性/賭博全部否 → 會拿到 3+ |
 | 目標對象 | 18 歲以上（或 13+；不要勾兒童） |
 | 新聞應用程式 | 否 |
 | 資料安全 | 照 `docs/store-listing.md` 的表逐題填 |
-| 帳號刪除 | 「提供帳號刪除」→ URL 填 `https://share-money.tuyucheng0407.workers.dev/privacy#account-deletion` |
+| 帳號刪除 | 「提供帳號刪除」→ URL 填 `https://sharemoney.cc/privacy#account-deletion` |
 
 ⚠️ 應用程式存取權需要一組審查員能用的 Google 測試帳號——建一個測試用 Gmail，先在 app 裡登入過一次確認可用。
 

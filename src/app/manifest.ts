@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'ShareMoney',
+    name: 'ShareMoney 分帳',
     short_name: 'ShareMoney',
     description: '分帳工具——旅遊、聚餐、社團、公司活動都好用',
     start_url: '/',

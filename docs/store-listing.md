@@ -7,23 +7,25 @@
 | 欄位 | 值 |
 |---|---|
 | App 名稱（30 字內） | ShareMoney 分帳 |
-| 簡短說明（80 字內） | 旅遊、聚餐、社團、合租都好用的分帳神器：記帳、分帳、結算一次搞定，即時同步。 |
+| 簡短說明（80 字內） | 旅遊、聚餐、社團、合租都能用的分帳神器：記帳、分帳、結算一次搞定，即時同步、推播提醒。 |
 | 類別 | 財經 |
-| 隱私政策 URL | https://share-money.tuyucheng0407.workers.dev/privacy |
-| 帳號刪除 URL（Play 必填） | https://share-money.tuyucheng0407.workers.dev/privacy#account-deletion |
+| 隱私政策 URL | https://sharemoney.cc/privacy |
+| 帳號刪除 URL（Play 必填） | https://sharemoney.cc/privacy#account-deletion |
 | 聯絡 email | sei.tu@neutec.com.tw |
 
 ## 完整說明（4000 字內）
 
 ```
-和朋友出遊、聚餐、社團出帳，誰付了門票、誰墊了晚餐，結算總是一團亂？
+一起出遊、週五聚餐、社團活動、和室友分攤水電——誰付了錢、誰還沒還，事後算起來總是一團亂？
 ShareMoney 讓分帳變簡單：
 
-📒 一個活動一本帳
-旅遊、聚餐、社團、公司活動、日常合租都能建帳本，邀請成員，所有費用集中在同一本帳。
+📒 一件事一本帳
+旅遊、聚餐、社團活動、公司活動、日常合租，各自開一本帳本，邀請成員，所有費用集中在一起。
+選好帳本類型，日期與外幣欄位會自動帶上適合的預設值，也可以隨時自己改。
 
 💸 彈性分帳
-每筆費用可指定付款人與分攤成員，出國旅遊可開啟外幣匯率換算。
+每筆費用可指定付款人與分攤成員，金額不平均也能各自輸入。
+需要時開啟外幣記帳，自動帶入即時匯率換算台幣。
 
 ✅ 分帳確認機制
 成員可確認或提出異議，帳目透明沒糾紛。
@@ -63,17 +65,19 @@ Play Store：手機截圖至少 2 張（16:9 或 9:16，最短邊 ≥ 320px、�
 4. 結算頁（誰付誰多少）
 5. 活動紀錄／通知
 
-✅ 已完成（2026-07-15），檔案在 `docs/store-assets/`：
+✅ 已重拍（2026-07-22，去旅遊化），檔案在 `docs/store-assets/`：
 
 | 檔案 | 內容 | 尺寸 |
 |---|---|---|
-| `screenshot-1-trips.png` | 行程列表 | 1080×2400 |
-| `screenshot-2-trip-detail.png` | 行程明細＋每日支出圖 | 1080×2400 |
-| `screenshot-3-balance.png` | 結算頁（建議轉帳） | 1080×2400 |
-| `screenshot-4-add-expense.png` | 記一筆（均攤） | 1080×2400 |
+| `screenshot-1-ledgers.png` | 帳本列表（社團／合租／聚餐／旅遊混合） | 1080×2400 |
+| `screenshot-2-new-ledger.png` | 新帳本設定頁（六種帳本類型＋日期／外幣預設） | 1080×2400 |
+| `screenshot-3-ledger-detail.png` | 帳本明細（室友公費，純台幣） | 1080×2400 |
+| `screenshot-4-balance.png` | 結算頁（建議轉帳） | 1080×2400 |
+| `screenshot-5-add-expense.png` | 記一筆（均攤） | 1080×2400 |
+| `screenshot-6-travel-detail.png` | 旅遊帳本明細＋每日支出圖＋外幣 | 1080×2400 |
 | `feature-graphic.png` | 主題圖片 | 1024×500 |
 
-截圖用的示範資料（王小明／林小華／張小美、東京五日遊＋首爾三日行）
+截圖用的示範資料（王小明／林小華／張小美；東京五日遊、週五燒肉聚餐、室友公費、攝影社迎新）
 存在正式 Supabase，帳號為 `demo-*@sharemoney.demo`（見 twa-android.md）。
 
 另需：
