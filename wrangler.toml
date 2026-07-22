@@ -11,6 +11,10 @@ region = "aws:ap-southeast-2"
 [assets]
 directory = ".open-next/assets"
 
+# Kept alive because the TWA released to Play as versionCode 3 still points at
+# the workers.dev host; without it those installs get a 404 until users update.
+workers_dev = true
+
 [[routes]]
 pattern = "sharemoney.cc"
 custom_domain = true

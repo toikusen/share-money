@@ -20,8 +20,8 @@
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionName": "4",
-  "appVersionCode": 4,
+  "appVersionName": "1.0.3",
+  "appVersionCode": 5,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://sharemoney.cc/manifest.webmanifest",
@@ -40,5 +40,5 @@
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "4"
+  "appVersion": "1.0.3"
 }
