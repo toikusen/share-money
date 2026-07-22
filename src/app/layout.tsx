@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { Inter } from 'next/font/google'
 import NextTopLoader from 'nextjs-toploader'
 import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration'
@@ -21,6 +22,9 @@ export const viewport: Viewport = {
   themeColor: '#4f61c9',
 }
 
+/** ca-pub-... — unset in dev/preview, so no AdSense script is loaded there. */
+const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-TW">
@@ -28,6 +32,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NextTopLoader color="#4f61c9" height={2} showSpinner={false} shadow={false} />
         <ServiceWorkerRegistration />
         {children}
+        {adsenseClient && (
+          // beforeInteractive = injected into the server HTML <head>; afterInteractive is
+          // client-side only, which the AdSense verification crawler cannot see.
+          <Script
+            async
+            strategy="beforeInteractive"
+            crossOrigin="anonymous"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
+          />
+        )}
       </body>
     </html>
   )
