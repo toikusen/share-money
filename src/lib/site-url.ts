@@ -2,6 +2,13 @@ import { headers } from 'next/headers'
 
 const LOCAL_SITE_URL = 'http://localhost:3000'
 
+/**
+ * Canonical public origin for sitemap/robots. Deliberately not read from
+ * NEXT_PUBLIC_SITE_URL: the Cloudflare build environment still exports the old
+ * workers.dev value, which would publish the wrong URLs to search engines.
+ */
+export const CANONICAL_SITE_URL = 'https://sharemoney.cc'
+
 type HeaderReader = Pick<Headers, 'get'>
 
 function firstHeaderValue(value: string | null) {
