@@ -3,6 +3,12 @@ main = ".open-next/worker.js"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+# Top-level on purpose: under a [table] header this becomes e.g. assets.workers_dev
+# and is silently ignored. Kept true because the TWA released to Play as
+# versionCode 3 still opens the workers.dev host, and adding a route would
+# otherwise infer workers_dev = false and 404 those installs.
+workers_dev = true
+
 # Supabase is hosted in AWS ap-southeast-2 (Sydney). Pin dynamic Worker
 # execution near the database; static assets remain edge-served near users.
 [placement]
@@ -10,10 +16,6 @@ region = "aws:ap-southeast-2"
 
 [assets]
 directory = ".open-next/assets"
-
-# Kept alive because the TWA released to Play as versionCode 3 still points at
-# the workers.dev host; without it those installs get a 404 until users update.
-workers_dev = true
 
 [[routes]]
 pattern = "sharemoney.cc"
