@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import Script from 'next/script'
 import { Inter } from 'next/font/google'
 import NextTopLoader from 'nextjs-toploader'
 import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration'
@@ -33,11 +32,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ServiceWorkerRegistration />
         {children}
         {adsenseClient && (
-          // beforeInteractive = injected into the server HTML <head>; afterInteractive is
-          // client-side only, which the AdSense verification crawler cannot see.
-          <Script
+          // Plain <script>, not next/script: every next/script strategy emits a preload +
+          // a client-side bootstrap instead of a literal tag, and the AdSense verification
+          // crawler looks for the tag itself. React hoists this into <head>.
+          <script
             async
-            strategy="beforeInteractive"
             crossOrigin="anonymous"
             src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
           />
