@@ -1,6 +1,6 @@
 {
   "packageId": "com.tuyucheng.sharemoney",
-  "host": "share-money.tuyucheng0407.workers.dev",
+  "host": "sharemoney.cc",
   "name": "ShareMoney 分帳",
   "launcherName": "ShareMoney",
   "display": "standalone",
@@ -13,18 +13,18 @@
   "backgroundColor": "#FAFAFA",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "https://share-money.tuyucheng0407.workers.dev/icon-512.png",
-  "maskableIconUrl": "https://share-money.tuyucheng0407.workers.dev/icon-512.png",
+  "iconUrl": "https://sharemoney.cc/icon-512.png",
+  "maskableIconUrl": "https://sharemoney.cc/icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "./android.keystore",
     "alias": "android"
   },
-  "appVersionName": "1.0.2",
-  "appVersionCode": 3,
+  "appVersionName": "4",
+  "appVersionCode": 4,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://share-money.tuyucheng0407.workers.dev/manifest.webmanifest",
+  "webManifestUrl": "https://sharemoney.cc/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -33,12 +33,12 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://share-money.tuyucheng0407.workers.dev/",
+  "fullScopeUrl": "https://sharemoney.cc/",
   "minSdkVersion": 21,
   "orientation": "portrait",
   "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "displayOverride": [],
-  "appVersion": "1.0.2"
+  "appVersion": "4"
 }

@@ -11,8 +11,12 @@ region = "aws:ap-southeast-2"
 [assets]
 directory = ".open-next/assets"
 
+[[routes]]
+pattern = "sharemoney.cc"
+custom_domain = true
+
 [vars]
 NEXT_PUBLIC_SUPABASE_URL = "https://oyufmenqqgnyhqbdrulx.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im95dWZtZW5xcWdueWhxYmRydWx4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExOTc3OTIsImV4cCI6MjA5Njc3Mzc5Mn0.zbJxY0pDaRdN1987wr2odY9EHk2cEgdG3czwgBCWz14"
-NEXT_PUBLIC_SITE_URL = "https://share-money.tuyucheng0407.workers.dev"
+NEXT_PUBLIC_SITE_URL = "https://sharemoney.cc"
 NEXT_PUBLIC_VAPID_PUBLIC_KEY = "BGvOAgREiZw86VpRNxX7YAm99dx0Nhj-y3_4RkZ9s7V42reB95lVJul43FDYKX5KPNxLF2pslRZ0h-GgoFY3TBM"
