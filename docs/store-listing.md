@@ -75,7 +75,7 @@ Play Store：手機截圖至少 2 張（16:9 或 9:16，最短邊 ≥ 320px、�
 | `screenshot-4-balance.png` | 結算頁（建議轉帳） | 1080×2400 |
 | `screenshot-5-add-expense.png` | 記一筆（均攤） | 1080×2400 |
 | `screenshot-6-travel-detail.png` | 旅遊帳本明細＋每日支出圖＋外幣 | 1080×2400 |
-| `feature-graphic.png` | 主題圖片 | 1024×500 |
+| `feature-graphic.png` | 主題圖片（原始檔 `feature-graphic.html`，Chrome 1024×500 DPR1 截圖重產） | 1024×500 |
 
 截圖用的示範資料（王小明／林小華／張小美；東京五日遊、週五燒肉聚餐、室友公費、攝影社迎新）
 存在正式 Supabase，帳號為 `demo-*@sharemoney.demo`（見 twa-android.md）。
