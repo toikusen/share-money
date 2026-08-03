@@ -17,6 +17,12 @@ export function middleware(request: NextRequest) {
     name === cookieBase || name.startsWith(`${cookieBase}.`)
   ))
 
+  // "/" is the public landing page — crawlers and first-time visitors must reach
+  // it, so only members get bounced onward to their ledgers.
+  if (request.nextUrl.pathname === '/') {
+    return hasSessionCookie ? NextResponse.redirect(new URL('/trips', request.url)) : NextResponse.next()
+  }
+
   if (hasSessionCookie) return NextResponse.next()
 
   const loginUrl = new URL('/login', request.url)

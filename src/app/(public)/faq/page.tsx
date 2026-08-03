@@ -58,8 +58,18 @@ const QA: ReadonlyArray<readonly [string, React.ReactNode]> = [
     '你們會看到我的消費紀錄或拿去賣嗎？',
     <>
       不會分享或販售。我們蒐集的是登入用的 Email、姓名，以及你自己輸入的費用內容，
-      用途只有讓 app 運作，沒有安裝任何分析或廣告追蹤 SDK。細節寫在
+      用途只有讓 app 運作。你的帳目資料不會提供給廣告商，也不會用來做廣告鎖定。細節寫在
       <Link href="/privacy" className="text-accent hover:underline mx-1">隱私政策</Link>。
+    </>,
+  ],
+  [
+    '為什麼有廣告？帳本裡也會有嗎？',
+    <>
+      ShareMoney 免費、沒有付費牆，伺服器與網域的成本靠公開頁面上的 Google AdSense 廣告分擔。
+      廣告只出現在首頁、計算機與說明類頁面，
+      <strong className="text-ink">登入後的帳本、費用清單與結算畫面不會插廣告</strong>。
+      廣告 Cookie 的說明與關閉方式見
+      <Link href="/privacy#advertising" className="text-accent hover:underline mx-1">隱私政策的第三方廣告一節</Link>。
     </>,
   ],
   [

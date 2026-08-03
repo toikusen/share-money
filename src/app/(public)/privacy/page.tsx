@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: 'ShareMoney 分帳工具的隱私政策與帳號刪除說明',
 }
 
-const UPDATED_AT = '2026-07-07'
+const UPDATED_AT = '2026-08-03'
 const CONTACT_EMAIL = 'sei.tu@neutec.com.tw'
 
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
@@ -20,10 +20,7 @@ function Section({ title, id, children }: { title: string; id?: string; children
 
 export default function PrivacyPage() {
   return (
-    <main className="max-w-lg mx-auto px-5 py-10">
-      <Link href="/settings" className="inline-block text-sm text-ink-3 hover:text-ink-2 mb-4">
-        ← 返回設定
-      </Link>
+    <main className="max-w-2xl mx-auto px-5 py-10">
       <h1 className="text-xl font-bold text-ink mb-1">ShareMoney 隱私政策</h1>
       <p className="text-xs text-ink-3 mb-8">最後更新：{UPDATED_AT}</p>
 
@@ -48,7 +45,10 @@ export default function PrivacyPage() {
             <strong className="text-ink">收款帳戶（選填）</strong>：你可以在設定中儲存銀行代碼、帳號與戶名，僅用於在結算時向與你同帳本的成員顯示收款方式，方便對方轉帳給你。此資料只有同帳本成員可見，可隨時在設定中刪除；刪除帳號時也會一併永久刪除。我們不會蒐集網路銀行帳號密碼、OTP 或金融卡資訊。
           </li>
         </ul>
-        <p>我們不蒐集精確位置、通訊錄、廣告識別碼，也不進行任何廣告追蹤。</p>
+        <p>
+          我們自己不蒐集精確位置、通訊錄或廣告識別碼，也沒有在服務中安裝分析工具。
+          網站的公開頁面會顯示第三方廣告，相關的資料處理見下方「第三方廣告」一節。
+        </p>
       </Section>
 
       <Section title="資料的使用方式">
@@ -62,6 +62,43 @@ export default function PrivacyPage() {
       <Section title="資料儲存與委託處理">
         <p>
           資料儲存於 Supabase（資料庫與登入驗證）並透過 Cloudflare 提供服務。登入採用 Google OAuth，我們不會取得或儲存你的 Google 密碼。
+        </p>
+      </Section>
+
+      <Section title="第三方廣告" id="advertising">
+        <p>
+          ShareMoney 免費提供，營運成本由網站上的第三方廣告分擔。我們使用 Google AdSense
+          在<strong className="text-ink">公開頁面</strong>（首頁、分帳計算機、使用教學、結算原理、常見問題等）顯示廣告，
+          登入後的帳本、費用與結算畫面不會插入廣告。
+        </p>
+        <ul className="list-disc pl-5 flex flex-col gap-1.5">
+          <li>
+            Google 等第三方供應商會使用 Cookie，根據你先前造訪本網站或其他網站的紀錄放送廣告。
+          </li>
+          <li>
+            使用廣告 Cookie 可讓 Google 及其合作夥伴根據你造訪本網站與網路上其他網站的情況放送廣告。
+          </li>
+          <li>
+            我們<strong className="text-ink">不會</strong>把你的帳號資訊、帳本名稱或費用內容提供給廣告商，
+            也不會用你的帳目資料做廣告鎖定。廣告是依頁面內容與 Google 自身的資料放送的。
+          </li>
+        </ul>
+        <p>
+          你可以前往{' '}
+          <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+            Google 廣告設定
+          </a>{' '}
+          停用個人化廣告，或到{' '}
+          <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+            aboutads.info
+          </a>{' '}
+          管理第三方供應商的 Cookie。停用個人化廣告後仍會看到廣告，只是與你的興趣關聯較低。
+        </p>
+        <p>
+          Google 如何在合作夥伴網站使用資料，說明於{' '}
+          <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
+            policies.google.com/technologies/partner-sites
+          </a>。
         </p>
       </Section>
 
@@ -95,6 +132,11 @@ export default function PrivacyPage() {
           <a href={`mailto:${CONTACT_EMAIL}`} className="underline underline-offset-2">{CONTACT_EMAIL}</a>。
         </p>
       </Section>
+
+      <div className="border-t border-line pt-6 mt-10 text-sm text-ink-3">
+        另請參閱<Link href="/terms" className="text-accent hover:underline mx-1">服務條款</Link>
+        與<Link href="/about" className="text-accent hover:underline mx-1">關於我們</Link>。
+      </div>
     </main>
   )
 }

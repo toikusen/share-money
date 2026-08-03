@@ -2,13 +2,21 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import NextTopLoader from 'nextjs-toploader'
 import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration'
+import { CANONICAL_SITE_URL } from '@/lib/site-url'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
+  // Lets each page declare `alternates.canonical` as a path instead of a full URL.
+  metadataBase: new URL(CANONICAL_SITE_URL),
   title: 'ShareMoney',
   description: '分帳工具——旅遊、聚餐、社團、公司活動都好用',
+  openGraph: {
+    siteName: 'ShareMoney',
+    locale: 'zh_TW',
+    type: 'website',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -21,9 +29,6 @@ export const viewport: Viewport = {
   themeColor: '#4f61c9',
 }
 
-/** ca-pub-... — unset in dev/preview, so no AdSense script is loaded there. */
-const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="zh-TW">
@@ -31,16 +36,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NextTopLoader color="#4f61c9" height={2} showSpinner={false} shadow={false} />
         <ServiceWorkerRegistration />
         {children}
-        {adsenseClient && (
-          // Plain <script>, not next/script: every next/script strategy emits a preload +
-          // a client-side bootstrap instead of a literal tag, and the AdSense verification
-          // crawler looks for the tag itself. React hoists this into <head>.
-          <script
-            async
-            crossOrigin="anonymous"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-          />
-        )}
       </body>
     </html>
   )
