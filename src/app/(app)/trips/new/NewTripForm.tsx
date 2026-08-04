@@ -101,8 +101,9 @@ export function NewTripForm({ rates }: Props) {
               <input name="end_date" type="date" defaultValue={today} aria-label="結束日期" className={`${inputClass} flex-1`} />
             </div>
           )}
-          {dateMode !== 'none' && (
-            <p className="text-xs text-ink-4 mt-1.5">填了日期，帳本頁會多一張「每日支出」圖</p>
+          {/* 只在 range 提:DailySpendChart 少於 2 天或超過 16 天都不畫,單日帳本永遠沒有圖 */}
+          {dateMode === 'range' && (
+            <p className="text-xs text-ink-4 mt-1.5">跨 2～16 天的區間，帳本頁會多一張「每日支出」圖</p>
           )}
         </div>
 
