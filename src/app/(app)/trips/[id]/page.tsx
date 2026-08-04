@@ -65,8 +65,10 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
   }
 
   const expenseRows = (expenses ?? []) as unknown as ExpenseDisplayRow[]
-  // Currency is only switchable before any expense exists; fetch live rates just for that case.
-  const foreignRates = trip.foreign_currency && expenseRows.length === 0 ? await fetchForeignRates() : null
+  // 匯率表只在幣別還能動時要:純 TWD 帳本(隨時可開外幣),或外幣帳本還沒有費用。
+  // fetchForeignRates 有一小時快取,純 TWD 帳本多帶這一次幾乎零成本。
+  const currencyEditable = trip.foreign_currency == null || expenseRows.length === 0
+  const foreignRates = currencyEditable ? await fetchForeignRates() : null
   const inviteUrl = `${siteUrl}/join/${trip.invite_token}`
   const canDeleteTrip = trip.created_by === user!.id
 
@@ -187,15 +189,16 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
         <InviteCard inviteUrl={inviteUrl} />
       </div>
 
-      {/* 匯率(安靜的工具列,純 TWD 帳本整條不出現)。無費用時可連幣別一起改；有費用後幣別鎖定，只改匯率。 */}
-      {trip.foreign_currency && (foreignRates ? (
+      {/* 匯率(安靜的工具列)。純 TWD 帳本收成一行「開啟外幣記帳」;外幣帳本無費用時可連幣別一起改，
+          有費用後幣別鎖定，只改匯率。 */}
+      {foreignRates ? (
         <TripCurrencyEditor
           tripId={id}
-          currency={trip.foreign_currency as ForeignCurrency}
-          rate={trip.exchange_rate!}
+          currency={trip.foreign_currency as ForeignCurrency | null}
+          rate={trip.exchange_rate}
           rates={foreignRates}
         />
-      ) : (
+      ) : (trip.foreign_currency && (
         <form action={updateRate} className="flex items-center gap-1.5 text-xs text-ink-3 mt-3">
           <span>匯率 1 {trip.foreign_currency} =</span>
           <input

@@ -106,8 +106,14 @@ export function NewTripForm({ rates }: Props) {
           )}
         </div>
 
-        <div className="flex items-center justify-between">
-          <label htmlFor="new-trip-fx" className="text-sm text-ink">使用外幣記帳</label>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <label htmlFor="new-trip-fx" className="text-sm text-ink">使用外幣記帳</label>
+            {/* ponytail: 關掉時把「本來就是台幣」講出來，省掉一個只有一個選項的主幣別選單 */}
+            <p className="text-xs text-ink-4 mt-0.5">
+              {fxOn ? '以外幣輸入金額，結算仍換算成新台幣（TWD）' : '這本帳以新台幣（TWD）記帳'}
+            </p>
+          </div>
           <button
             id="new-trip-fx"
             type="button"

@@ -7,19 +7,26 @@ import type { ForeignCurrency } from '@/types/database'
 
 type Props = {
   tripId: string
-  currency: ForeignCurrency
-  rate: number
+  /** null = 還沒開外幣的帳本,先收起成一行入口 */
+  currency: ForeignCurrency | null
+  rate: number | null
   rates: Record<ForeignCurrency, number | null>
 }
 
+const DEFAULT_CURRENCY: ForeignCurrency = 'JPY'
+
 /**
- * Rate toolbar shown while a trip has no expenses yet: the foreign currency is
- * still a dropdown, and switching it refills the rate from the pre-fetched live
- * table. Once expenses exist the trip page renders the currency as static text.
+ * Rate toolbar shown while a trip's currency is still switchable: the foreign
+ * currency is a dropdown, and switching it refills the rate from the pre-fetched
+ * live table. Two entry states:
+ * - currency = null: ledger is pure TWD, render a collapsed "開啟外幣記帳" link.
+ * - currency set: the trip has no expenses yet, so the currency can still change.
+ * Once a foreign ledger has expenses the trip page renders the currency as text.
  */
 export function TripCurrencyEditor({ tripId, currency: initialCurrency, rate: initialRate, rates }: Props) {
-  const [currency, setCurrency] = useState<ForeignCurrency>(initialCurrency)
-  const [rate, setRate] = useState(String(initialRate))
+  const [open, setOpen] = useState(initialCurrency != null)
+  const [currency, setCurrency] = useState<ForeignCurrency>(initialCurrency ?? DEFAULT_CURRENCY)
+  const [rate, setRate] = useState(String(initialRate ?? rates[DEFAULT_CURRENCY] ?? ''))
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
 
@@ -36,6 +43,18 @@ export function TripCurrencyEditor({ tripId, currency: initialCurrency, rate: in
     const res = await updateTripCurrencyAction(tripId, currency, parseFloat(rate))
     setPending(false)
     if (res?.error) setError(res.error)
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mt-3 text-xs text-ink-3 hover:text-accent transition-colors"
+      >
+        ＋ 開啟外幣記帳
+      </button>
+    )
   }
 
   return (
@@ -67,8 +86,11 @@ export function TripCurrencyEditor({ tripId, currency: initialCurrency, rate: in
         disabled={pending}
         className="ml-1 text-accent hover:text-accent-deep text-xs font-medium transition-colors disabled:opacity-50"
       >
-        更新
+        {initialCurrency == null ? '開啟' : '更新'}
       </button>
+      {initialCurrency == null && (
+        <p className="w-full text-ink-4">已記錄的台幣支出維持台幣，不會被換算</p>
+      )}
       {error && <span className="text-owe w-full" role="alert">{error}</span>}
     </form>
   )
