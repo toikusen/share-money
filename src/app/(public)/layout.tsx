@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { AdsenseScript } from '@/components/AdsenseScript'
 
 const NAV = [
   ['/calculator', '分帳計算機'],
@@ -13,13 +14,6 @@ const FOOTER = [
   ['/terms', '服務條款'],
   ['/privacy', '隱私政策'],
 ] as const
-
-/**
- * ca-pub-… — unset in dev/preview, so no AdSense script is loaded there.
- * Scoped to this layout on purpose: ads belong on the public content pages,
- * not on the login screen or inside a member's ledger.
- */
-const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -58,16 +52,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         </div>
       </footer>
 
-      {adsenseClient && (
-        // Plain <script>, not next/script: every next/script strategy emits a preload +
-        // a client-side bootstrap instead of a literal tag, and the AdSense verification
-        // crawler looks for the tag itself. React hoists this into <head>.
-        <script
-          async
-          crossOrigin="anonymous"
-          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClient}`}
-        />
-      )}
+      <AdsenseScript />
     </div>
   )
 }
