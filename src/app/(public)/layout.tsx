@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { AdsenseScript } from '@/components/AdsenseScript'
+import { PublicNav } from '@/components/public/PublicNav'
 
 const NAV = [
   ['/calculator', '分帳計算機'],
@@ -18,23 +19,7 @@ const FOOTER = [
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-surface">
-      <header className="border-b border-line bg-white">
-        <div className="max-w-2xl mx-auto px-5 py-3.5 flex items-center justify-between gap-4">
-          <Link href="/" className="text-base font-bold text-ink shrink-0">
-            share<span className="text-ink-4 font-normal mx-0.5">·</span>money
-          </Link>
-          <nav aria-label="主要導覽" className="flex items-center gap-3 text-xs text-ink-3 overflow-x-auto">
-            {NAV.map(([href, label]) => (
-              <Link key={href} href={href} className="whitespace-nowrap hover:text-ink transition-colors">
-                {label}
-              </Link>
-            ))}
-            <Link href="/login" className="whitespace-nowrap font-semibold text-accent hover:text-accent-deep transition-colors">
-              登入
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <PublicNav />
 
       <div className="flex-1">{children}</div>
 
