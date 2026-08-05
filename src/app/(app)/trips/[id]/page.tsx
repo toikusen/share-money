@@ -15,6 +15,7 @@ import { isExpenseApproved } from '@/lib/utils/expenses'
 import { avatarBg, avatarFg, avatarChar } from '@/lib/utils/avatar'
 import { formatTripDateRange } from '@/lib/utils/datetime'
 import { LedgerTypeIcon } from '@/components/trips/LedgerTypeIcon'
+import { AdUnit } from '@/components/AdUnit'
 import Link from 'next/link'
 
 type MemberProfile = { id: string; display_name: string; avatar_url: string | null; created_at: string }
@@ -247,6 +248,8 @@ export default async function TripPage({ params }: { params: Promise<{ id: strin
           groupByDate={!!(trip.start_date || trip.end_date)}
         />
       </section>
+
+      <AdUnit className="mt-8" />
     </main>
   )
 }
