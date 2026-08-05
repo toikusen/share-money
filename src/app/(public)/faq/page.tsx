@@ -65,9 +65,9 @@ const QA: ReadonlyArray<readonly [string, React.ReactNode]> = [
   [
     '為什麼有廣告？帳本裡也會有嗎？',
     <>
-      ShareMoney 免費、沒有付費牆，伺服器與網域的成本靠公開頁面上的 Google AdSense 廣告分擔。
-      廣告只出現在首頁、計算機與說明類頁面，
-      <strong className="text-ink">登入後的帳本、費用清單與結算畫面不會插廣告</strong>。
+      ShareMoney 免費、沒有付費牆，伺服器與網域的成本靠 Google AdSense 廣告分擔。
+      <strong className="text-ink">首頁、計算機、說明類頁面與登入後的帳本畫面都會有廣告</strong>，
+      位置盡量避開輸入與結算的操作動線。
       廣告 Cookie 的說明與關閉方式見
       <Link href="/privacy#advertising" className="text-accent hover:underline mx-1">隱私政策的第三方廣告一節</Link>。
     </>,

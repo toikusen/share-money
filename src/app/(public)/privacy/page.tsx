@@ -47,7 +47,7 @@ export default function PrivacyPage() {
         </ul>
         <p>
           我們自己不蒐集精確位置、通訊錄或廣告識別碼，也沒有在服務中安裝分析工具。
-          網站的公開頁面會顯示第三方廣告，相關的資料處理見下方「第三方廣告」一節。
+          網站的公開頁面與登入後的畫面會顯示第三方廣告，相關的資料處理見下方「第三方廣告」一節。
         </p>
       </Section>
 
@@ -68,8 +68,8 @@ export default function PrivacyPage() {
       <Section title="第三方廣告" id="advertising">
         <p>
           ShareMoney 免費提供，營運成本由網站上的第三方廣告分擔。我們使用 Google AdSense
-          在<strong className="text-ink">公開頁面</strong>（首頁、分帳計算機、使用教學、結算原理、常見問題等）顯示廣告，
-          登入後的帳本、費用與結算畫面不會插入廣告。
+          在<strong className="text-ink">公開頁面</strong>（首頁、分帳計算機、使用教學、結算原理、常見問題等）
+          與<strong className="text-ink">登入後的帳本畫面</strong>顯示廣告。登入與邀請頁面不放廣告。
         </p>
         <ul className="list-disc pl-5 flex flex-col gap-1.5">
           <li>
@@ -79,8 +79,8 @@ export default function PrivacyPage() {
             使用廣告 Cookie 可讓 Google 及其合作夥伴根據你造訪本網站與網路上其他網站的情況放送廣告。
           </li>
           <li>
-            我們<strong className="text-ink">不會</strong>把你的帳號資訊、帳本名稱或費用內容提供給廣告商，
-            也不會用你的帳目資料做廣告鎖定。廣告是依頁面內容與 Google 自身的資料放送的。
+            我們<strong className="text-ink">不會</strong>把你的帳號資訊、帳本名稱或費用內容傳送給廣告商，
+            也不會用你的帳目資料做廣告鎖定。
           </li>
         </ul>
         <p>
