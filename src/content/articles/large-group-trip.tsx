@@ -139,7 +139,7 @@ export const article: Article = {
         </li>
         <li>
           <strong>指定一張卡刷海外大額。</strong>
-          全團用同一張卡刷，匯率一致、手續費最低，分帳也乾淨。
+          全團用同一張卡刷，匯率一致、分帳乾淨；順便挑手續費最低或回饋最好的那張。
           為什麼會有差，看<Link href="/articles/credit-card-fx-rate">海外刷卡的匯率</Link>。
         </li>
         <li>
