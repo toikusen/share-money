@@ -102,7 +102,7 @@ export const article: Article = {
           <strong>公司補助</strong>雖然慢，但一定會回來，只要單據齊全。
         </li>
         <li>
-          <strong>同事的自付額</strong>快，但會漏。十四份裡有兩三個人忘記轉，
+          <strong>同事的自付額</strong>快，但會漏。十二個人裡有兩三個忘記轉，
           金額只有 700，代墊人通常不會開口催——這筆錢往下就變成他自己吸收了。
         </li>
       </ul>
@@ -110,7 +110,7 @@ export const article: Article = {
       <ol>
         <li>
           <strong>自付額當天收。</strong>吃完飯、大家還在現場的時候把金額算出來丟到群組，
-          當場轉帳。隔天就會掉一半的回收率。
+          當場轉帳。人一散、隔天再說，就會開始有人忘記。
         </li>
         <li>
           <strong>大額支出讓公司直接付。</strong>
