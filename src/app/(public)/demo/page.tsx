@@ -118,8 +118,8 @@ export default function DemoPage() {
         </div>
         <p className="text-xs text-ink-4 mt-3 leading-relaxed">
           日圓費用輸入的是原幣金額，畫面上同時顯示按帳本匯率換算的台幣。
-          回國拿到信用卡帳單後把匯率改掉，整本帳會一起重算——
-          為什麼帳單匯率會不一樣，寫在
+          這本帳用的 0.22 是即時匯率；海外刷卡的帳單通常再高約 1.5%，
+          所以實務上建帳時直接乘 1.015 就好，不必等帳單回來改。原因寫在
           <Link href="/articles/credit-card-fx-rate" className="text-accent hover:underline mx-1">海外刷卡的匯率</Link>。
         </p>
       </section>
