@@ -4,6 +4,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: '隱私政策 | ShareMoney',
   description: 'ShareMoney 分帳工具的隱私政策與帳號刪除說明',
+  alternates: { canonical: '/privacy' },
 }
 
 const UPDATED_AT = '2026-08-03'

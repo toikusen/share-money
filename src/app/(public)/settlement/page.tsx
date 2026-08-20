@@ -4,6 +4,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: '結算原理 | ShareMoney 分帳',
   description: 'ShareMoney 如何計算每個人該收該付的金額，以及如何用最少的轉帳次數把一群人的帳結清。',
+  alternates: { canonical: '/settlement' },
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
