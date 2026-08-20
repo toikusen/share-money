@@ -73,3 +73,84 @@ body {
   .anim-grow-l, .anim-grow-r, .anim-grow-y, .anim-rise, .anim-fade { animation: none; }
   .anim-flow-draw { animation: none; stroke-dashoffset: 0; }
 }
+
+/* ── 長文排版 ──────────────────────────────────────
+   文章 body 用原生標籤書寫，樣式集中在這裡，省掉一堆單行元件。
+─────────────────────────────────────────────────── */
+
+.article-body {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--color-ink-2);
+}
+.article-body > * + * { margin-top: 1.05rem; }
+.article-body h2 {
+  margin-top: 2.4rem;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+.article-body h3 {
+  margin-top: 1.8rem;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+.article-body strong { color: var(--color-ink); font-weight: 600; }
+.article-body a { color: var(--color-accent); }
+.article-body a:hover { text-decoration: underline; }
+.article-body ul, .article-body ol { padding-left: 1.35rem; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li + li { margin-top: 0.4rem; }
+.article-body li::marker { color: var(--color-ink-4); }
+.article-body blockquote {
+  border-left: 3px solid var(--color-edge);
+  padding-left: 0.9rem;
+  color: var(--color-ink-3);
+}
+.article-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.article-body th {
+  padding: 0.5rem 0.6rem 0.5rem 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-ink-3);
+}
+.article-body td {
+  padding: 0.5rem 0.6rem 0.5rem 0;
+  border-top: 1px solid var(--color-line);
+  text-align: left;
+}
+/* 非第一欄全是金額的表格,整張加 .nums 就右對齊 —— 表頭跟著一起,不用逐格標記。 */
+.article-body .nums th:not(:first-child),
+.article-body .nums td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.article-body .figure {
+  overflow-x: auto;
+  background: #fff;
+  border-radius: 1rem;
+  padding: 0.9rem 1.1rem;
+  box-shadow: var(--shadow-card);
+}
+.article-body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  background: var(--color-fill);
+  border-radius: 0.3rem;
+  padding: 0.1rem 0.32rem;
+  color: var(--color-ink);
+}
+.article-body .callout {
+  background: var(--color-fill);
+  border-radius: 0.9rem;
+  padding: 0.9rem 1.1rem;
+  font-size: 14px;
+}

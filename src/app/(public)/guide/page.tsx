@@ -1,10 +1,23 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { JsonLd } from '@/components/JsonLd'
 
 export const metadata: Metadata = {
   title: '使用教學 | ShareMoney 分帳',
   description: '從建立帳本、邀請成員、記一筆費用到一鍵結算，ShareMoney 分帳的完整使用說明。',
+  alternates: { canonical: '/guide' },
 }
+
+/** HowTo 結構化資料的步驟,與下面各 Section 的標題對應。 */
+const HOW_TO_STEPS = [
+  ['一、建立帳本', '一件事開一本帳，建立時選帳本類型與日期區間，類型只影響顯示與表單預設值。'],
+  ['二、邀請成員', '按「邀請成員」產生連結傳給同行的人，對方用 Google 帳號登入後加入這本帳。'],
+  ['三、記一筆費用', '填名稱、付款時間、金額與付款人，再選這筆由誰分攤：均攤或自訂金額。'],
+  ['四、外幣與匯率', '開啟外幣記帳後選幣別，系統帶入即時匯率，可手動改成信用卡帳單上的實際匯率。'],
+  ['五、分帳確認機制', '被列為分攤對象的人會收到待確認項目，可以確認或提出異議。'],
+  ['六、一鍵結算', '結算頁算出每個人的淨額，推導出誰該轉給誰，並把轉帳筆數壓到最少。'],
+  ['七、即時同步與通知', '同一本帳有人新增費用時其他成員畫面即時更新，也可開啟推播通知。'],
+] as const
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -18,6 +31,23 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function GuidePage() {
   return (
     <main className="max-w-2xl mx-auto px-5 py-10">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'HowTo',
+          name: '怎麼用 ShareMoney 分帳',
+          description: '從建立帳本到一鍵結算的七個步驟。',
+          inLanguage: 'zh-TW',
+          totalTime: 'PT5M',
+          step: HOW_TO_STEPS.map(([name, text], i) => ({
+            '@type': 'HowToStep',
+            position: i + 1,
+            name,
+            text,
+          })),
+        }}
+      />
+
       <h1 className="text-xl font-bold text-ink mb-2">ShareMoney 使用教學</h1>
       <p className="text-sm text-ink-3 mb-8">
         一群人一起花錢，最麻煩的從來不是付錢，而是事後算錢。這頁說明怎麼用 ShareMoney

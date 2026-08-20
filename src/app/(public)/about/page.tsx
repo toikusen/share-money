@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { JsonLd } from '@/components/JsonLd'
+import { SITE_AUTHOR, SITE_NAME } from '@/lib/site'
+import { CANONICAL_SITE_URL } from '@/lib/site-url'
 
 export const metadata: Metadata = {
   title: '關於 ShareMoney | 這個分帳工具是誰做的、為什麼做',
@@ -7,7 +10,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/about' },
 }
 
-const CONTACT_EMAIL = 'sei.tu@neutec.com.tw'
+const CONTACT_EMAIL = SITE_AUTHOR.email
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -21,10 +24,46 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function AboutPage() {
   return (
     <main className="max-w-2xl mx-auto px-5 py-10">
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'AboutPage',
+          name: `關於 ${SITE_NAME}`,
+          url: `${CANONICAL_SITE_URL}/about`,
+          inLanguage: 'zh-TW',
+          mainEntity: {
+            '@type': 'Person',
+            name: SITE_AUTHOR.name,
+            jobTitle: SITE_AUTHOR.role,
+            email: `mailto:${SITE_AUTHOR.email}`,
+            url: `${CANONICAL_SITE_URL}/about`,
+          },
+        }}
+      />
+
       <h1 className="text-xl font-bold text-ink mb-2">關於 ShareMoney</h1>
       <p className="text-sm text-ink-3 mb-8">
         ShareMoney（sharemoney.cc）是一個共同費用的記帳與結算工具，由個人開發與維護，目前免費提供。
       </p>
+
+      <Section title="誰在做這個">
+        <p>
+          ShareMoney 由 <strong className="text-ink">{SITE_AUTHOR.name}</strong> 一個人開發與維護——
+          設計、前後端、資料庫、部署，還有這個網站上的每一篇文章，都是同一個人寫的。
+          沒有公司、沒有團隊、也沒有客服，所以功能推得慢，但每一封信都會看。
+        </p>
+        <p>
+          網站上的文章寫的是自己遇過、或身邊的人抱怨過的分帳問題：
+          團體旅行的外幣對帳、室友夏天的電費、代墊了三個月的錢怎麼開口要回來。
+          文章裡的金額都是示範用的，不是真實的人或消費紀錄，
+          但情境跟算法是真的。有寫錯的地方，來信會更正。
+        </p>
+        <p>
+          聯絡方式：
+          <a href={`mailto:${CONTACT_EMAIL}`} className="text-accent hover:underline mx-1">{CONTACT_EMAIL}</a>
+          。所有文章列在<Link href="/articles" className="text-accent hover:underline mx-1">分帳文章</Link>。
+        </p>
+      </Section>
 
       <Section title="為什麼做這個">
         <p>

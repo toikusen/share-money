@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { JsonLd } from '@/components/JsonLd'
+import { SITE_AUTHOR, SITE_NAME } from '@/lib/site'
+import { CANONICAL_SITE_URL } from '@/lib/site-url'
 
 export const metadata: Metadata = {
   title: 'ShareMoney 分帳｜旅遊、聚餐、合租的共同費用記帳與結算',
@@ -74,6 +77,45 @@ const HOME_FAQ = [
 export default function HomePage() {
   return (
     <main>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: SITE_NAME,
+          alternateName: 'ShareMoney 分帳',
+          url: CANONICAL_SITE_URL,
+          inLanguage: 'zh-TW',
+          publisher: { '@type': 'Person', name: SITE_AUTHOR.name },
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'WebApplication',
+          name: SITE_NAME,
+          url: CANONICAL_SITE_URL,
+          applicationCategory: 'FinanceApplication',
+          operatingSystem: 'Web, Android',
+          inLanguage: 'zh-TW',
+          description:
+            '共同費用的記帳與結算工具：記下誰付了什麼、誰該分攤，支援外幣匯率換算，最後用最少的轉帳次數結清。',
+          author: { '@type': 'Person', name: SITE_AUTHOR.name },
+          offers: { '@type': 'Offer', price: '0', priceCurrency: 'TWD' },
+          featureList: FEATURES.map(([title]) => title),
+        }}
+      />
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: HOME_FAQ.map(([q, a]) => ({
+            '@type': 'Question',
+            name: q,
+            acceptedAnswer: { '@type': 'Answer', text: a },
+          })),
+        }}
+      />
+
       <section className="max-w-2xl mx-auto px-5 pt-14 pb-12">
         <h1 className="text-[28px] leading-tight font-bold tracking-tight text-ink mb-4">
           一起花的錢，
@@ -98,7 +140,11 @@ export default function HomePage() {
             登入開一本帳
           </Link>
         </div>
-        <p className="text-xs text-ink-3 mt-3">計算機不用註冊，直接算。</p>
+        <p className="text-xs text-ink-3 mt-3">
+          計算機不用註冊，直接算。也可以先逛
+          <Link href="/demo" className="text-accent hover:underline mx-1">示範帳本</Link>
+          看看記完一趟旅行長什麼樣。
+        </p>
       </section>
 
       <section className="border-t border-line bg-white">
@@ -137,7 +183,12 @@ export default function HomePage() {
           ))}
         </ol>
         <p className="text-sm text-ink-3 mt-6">
-          每一步的細節寫在<Link href="/guide" className="text-accent hover:underline mx-1">使用教學</Link>。
+          每一步的細節寫在<Link href="/guide" className="text-accent hover:underline mx-1">使用教學</Link>，
+          實際跑過一趟的完整例子在
+          <Link href="/articles/japan-trip-split-example" className="text-accent hover:underline mx-1">
+            四人日本自由行的分帳實錄
+          </Link>
+          。
         </p>
       </section>
 
@@ -179,7 +230,9 @@ export default function HomePage() {
             ))}
           </div>
           <p className="text-sm text-ink-3 mt-6">
-            還有十幾題在<Link href="/faq" className="text-accent hover:underline mx-1">常見問題</Link>。
+            還有十幾題在<Link href="/faq" className="text-accent hover:underline mx-1">常見問題</Link>；
+            外幣對帳、室友電費、代墊怎麼要回來這類實務問題，寫在
+            <Link href="/articles" className="text-accent hover:underline mx-1">分帳文章</Link>。
           </p>
         </div>
       </section>

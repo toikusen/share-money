@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const NAV = [
-  ['/calculator', '分帳計算機'],
+  ['/calculator', '計算機'],
+  ['/articles', '文章'],
   ['/guide', '使用教學'],
   ['/settlement', '結算原理'],
   ['/faq', '常見問題'],
@@ -50,8 +51,8 @@ export function PublicNav() {
         </Link>
       </div>
 
-      {/* 手機:四等分不捲動,每格 46px 觸控高度 */}
-      <nav aria-label="主要導覽" className="sm:hidden grid grid-cols-4 border-t border-line">
+      {/* 手機:五等分不捲動,每格 46px 觸控高度 */}
+      <nav aria-label="主要導覽" className="sm:hidden grid grid-cols-5 border-t border-line">
         {NAV.map(([href, label]) => (
           <Link
             key={href}
