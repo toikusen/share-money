@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { JsonLd } from '@/components/JsonLd'
 import { ARTICLES, findArticle, relatedArticles } from '@/content/articles'
-import { SITE_AUTHOR, SITE_NAME } from '@/lib/site'
+import { findArticleEvidence } from '@/content/articles/evidence'
+import { SITE_AUTHOR } from '@/lib/site'
 import { CANONICAL_SITE_URL } from '@/lib/site-url'
 
 type Params = { params: Promise<{ slug: string }> }
@@ -16,6 +17,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
   const article = findArticle(slug)
   if (!article) return {}
+  const evidence = findArticleEvidence(slug)
 
   return {
     title: `${article.title} | ShareMoney 分帳`,
@@ -26,7 +28,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       title: article.title,
       description: article.description,
       publishedTime: article.published,
-      modifiedTime: article.updated ?? article.published,
+      modifiedTime: evidence?.reviewedAt ?? article.updated ?? article.published,
     },
   }
 }
@@ -37,6 +39,7 @@ export default async function ArticlePage({ params }: Params) {
   const { slug } = await params
   const article = findArticle(slug)
   if (!article) notFound()
+  const evidence = findArticleEvidence(slug)!
 
   const url = `${CANONICAL_SITE_URL}/articles/${slug}`
   const related = relatedArticles(slug)
@@ -50,11 +53,12 @@ export default async function ArticlePage({ params }: Params) {
           headline: article.title,
           description: article.description,
           datePublished: article.published,
-          dateModified: article.updated ?? article.published,
+          dateModified: evidence.reviewedAt,
           inLanguage: 'zh-TW',
           mainEntityOfPage: { '@type': 'WebPage', '@id': url },
           author: { '@type': 'Person', name: SITE_AUTHOR.name, url: `${CANONICAL_SITE_URL}/about` },
-          publisher: { '@type': 'Organization', name: SITE_NAME, url: CANONICAL_SITE_URL },
+          publisher: { '@type': 'Person', name: SITE_AUTHOR.name, url: `${CANONICAL_SITE_URL}/about` },
+          ...(evidence.sources.length > 0 && { citation: evidence.sources.map(source => source.url) }),
         }}
       />
       <JsonLd
@@ -87,10 +91,31 @@ export default async function ArticlePage({ params }: Params) {
             <Link href="/about" className="hover:text-ink-2">{SITE_AUTHOR.name}</Link>
             <span className="mx-1.5">·</span>
             {SITE_AUTHOR.role}
+            <span className="mx-1.5">·</span>
+            實質複查 <time dateTime={evidence.reviewedAt}>{formatDate(evidence.reviewedAt)}</time>
           </p>
         </header>
 
         <div className="article-body">{article.body}</div>
+
+        <section aria-labelledby="article-review" className="mt-10 rounded-2xl bg-white p-5 shadow-card">
+          <h2 id="article-review" className="text-base font-bold text-ink mb-2">本文如何核對</h2>
+          <p className="text-sm leading-relaxed text-ink-2">{evidence.methodology}</p>
+          {evidence.sources.length > 0 && (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-ink mb-2">主要資料來源</h3>
+              <ul className="flex flex-col gap-1.5 text-sm">
+                {evidence.sources.map(source => (
+                  <li key={source.url}>
+                    <a href={source.url} target="_blank" rel="noopener noreferrer" className="text-accent underline underline-offset-2">
+                      {source.publisher}｜{source.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </section>
       </article>
 
       {related.length > 0 && (

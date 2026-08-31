@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/terms' },
 }
 
-const UPDATED_AT = '2026-08-03'
+const UPDATED_AT = '2026-08-31'
 const CONTACT_EMAIL = 'sei.tu@neutec.com.tw'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -95,9 +95,9 @@ export default function TermsPage() {
 
       <Section title="七、廣告">
         <p>
-          本服務為免費提供，營運成本由網站上的第三方廣告分擔。廣告內容由 Google AdSense 等
-          第三方供應商提供，本服務不對廣告內容、廣告連結指向的網站或其商品與服務負責。
-          相關的 Cookie 與資料處理說明見<Link href="/privacy" className="text-accent hover:underline mx-1">隱私政策</Link>。
+          本服務目前未載入或顯示第三方廣告。未來若啟用 Google AdSense，只會評估在有完整原創內容的
+          公開頁面顯示；登入、邀請、錯誤、法律文件與登入後帳本不放廣告。第三方廣告的 Cookie、資料處理
+          與責任範圍將依<Link href="/privacy" className="text-accent hover:underline mx-1">隱私政策</Link>辦理。
         </p>
       </Section>
 

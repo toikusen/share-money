@@ -110,15 +110,14 @@ const QA: readonly Qa[] = [
     q: '為什麼有廣告？帳本裡也會有嗎？',
     a: (
       <>
-        ShareMoney 免費、沒有付費牆，伺服器與網域的成本靠 Google AdSense 廣告分擔。
-        <strong className="text-ink">首頁、計算機、說明類頁面與登入後的帳本畫面都會有廣告</strong>，
-        位置盡量避開輸入與結算的操作動線。
-        廣告 Cookie 的說明與關閉方式見
+        ShareMoney 免費、沒有付費牆，目前正在申請 Google AdSense，
+        <strong className="text-ink">審核期間全站不載入廣告，登入後的私人帳本未來也不放廣告</strong>。
+        若審核通過，只會評估在有完整原創內容的公開頁面顯示；相關資料處理原則見
         <Link href="/privacy#advertising" className="text-accent hover:underline mx-1">隱私政策的第三方廣告一節</Link>。
       </>
     ),
     plain:
-      'ShareMoney 免費、沒有付費牆，伺服器與網域的成本靠 Google AdSense 廣告分擔。首頁、計算機、說明類頁面與登入後的帳本畫面都會有廣告，位置盡量避開輸入與結算的操作動線。',
+      'ShareMoney 免費、沒有付費牆，目前正在申請 Google AdSense。審核期間全站不載入廣告，登入後的私人帳本未來也不放廣告；若審核通過，只會評估在有完整原創內容的公開頁面顯示。',
   },
   {
     q: '可以刪除我的帳號和資料嗎？',

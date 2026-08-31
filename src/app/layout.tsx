@@ -6,6 +6,7 @@ import { CANONICAL_SITE_URL } from '@/lib/site-url'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
+const adsenseClient = process.env.NEXT_PUBLIC_ADSENSE_CLIENT
 
 export const metadata: Metadata = {
   // Lets each page declare `alternates.canonical` as a path instead of a full URL.
@@ -22,6 +23,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'ShareMoney',
   },
+  verification: adsenseClient
+    ? { other: { 'google-adsense-account': adsenseClient } }
+    : undefined,
 }
 
 export const viewport: Viewport = {

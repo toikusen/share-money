@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: '/privacy' },
 }
 
-const UPDATED_AT = '2026-08-03'
+const UPDATED_AT = '2026-08-31'
 const CONTACT_EMAIL = 'sei.tu@neutec.com.tw'
 
 function Section({ title, id, children }: { title: string; id?: string; children: React.ReactNode }) {
@@ -48,7 +48,7 @@ export default function PrivacyPage() {
         </ul>
         <p>
           我們自己不蒐集精確位置、通訊錄或廣告識別碼，也沒有在服務中安裝分析工具。
-          網站的公開頁面與登入後的畫面會顯示第三方廣告，相關的資料處理見下方「第三方廣告」一節。
+          目前全站未載入第三方廣告；未來若啟用，相關資料處理原則見下方「第三方廣告」一節。
         </p>
       </Section>
 
@@ -68,10 +68,11 @@ export default function PrivacyPage() {
 
       <Section title="第三方廣告" id="advertising">
         <p>
-          ShareMoney 免費提供，營運成本由網站上的第三方廣告分擔。我們使用 Google AdSense
-          在<strong className="text-ink">公開頁面</strong>（首頁、分帳計算機、使用教學、結算原理、常見問題等）
-          與<strong className="text-ink">登入後的帳本畫面</strong>顯示廣告。登入與邀請頁面不放廣告。
+          ShareMoney 正在申請 Google AdSense。<strong className="text-ink">審核期間不載入廣告程式、
+          不顯示廣告，也不會因本站廣告設定 Cookie</strong>；目前只保留網站所有權驗證標記。
+          未來若啟用，只會評估放在有完整原創內容的公開頁面。登入、邀請、錯誤、法律文件與登入後帳本不放廣告。
         </p>
+        <p>未來啟用第三方廣告時，可能涉及以下資料處理：</p>
         <ul className="list-disc pl-5 flex flex-col gap-1.5">
           <li>
             Google 等第三方供應商會使用 Cookie，根據你先前造訪本網站或其他網站的紀錄放送廣告。
@@ -89,11 +90,11 @@ export default function PrivacyPage() {
           <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
             Google 廣告設定
           </a>{' '}
-          停用個人化廣告，或到{' '}
+          管理個人化廣告，或到{' '}
           <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
             aboutads.info
           </a>{' '}
-          管理第三方供應商的 Cookie。停用個人化廣告後仍會看到廣告，只是與你的興趣關聯較低。
+          管理第三方供應商的 Cookie。
         </p>
         <p>
           Google 如何在合作夥伴網站使用資料，說明於{' '}

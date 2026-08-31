@@ -13,8 +13,8 @@
   --color-surface: #fafafa; /* 頁面背景 */
   --color-ink: #1c1d21;     /* 主文字 */
   --color-ink-2: #55585e;   /* 次要文字 */
-  --color-ink-3: #8a8d93;   /* 三級文字/標籤 */
-  --color-ink-4: #a9abb1;   /* meta/弱化 */
+  --color-ink-3: #64676e;   /* 三級文字/標籤 */
+  --color-ink-4: #70737a;   /* meta/弱化，白底對比 4.75:1 */
   --color-line: #f0f0f2;    /* 髮絲分隔線 */
   --color-edge: #e3e4e8;    /* 較深的線(軸線、虛線框) */
   --color-fill: #f4f4f5;    /* 表單輸入填色 */
@@ -98,8 +98,17 @@ body {
   color: var(--color-ink);
 }
 .article-body strong { color: var(--color-ink); font-weight: 600; }
-.article-body a { color: var(--color-accent); }
+.article-body a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .article-body a:hover { text-decoration: underline; }
+
+a.text-accent {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .article-body ul, .article-body ol { padding-left: 1.35rem; }
 .article-body ul { list-style: disc; }
 .article-body ol { list-style: decimal; }

@@ -1,6 +1,4 @@
 import Link from 'next/link'
-import { AdUnit } from '@/components/AdUnit'
-import { AdsenseScript } from '@/components/AdsenseScript'
 import { PublicNav } from '@/components/public/PublicNav'
 
 const NAV = [
@@ -25,12 +23,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       <div className="flex-1">{children}</div>
 
-      {/* Every public page carries real content, so one unit above the footer is safe
-          here — unlike the login / invite screens, which stay ad-free. */}
-      <div className="max-w-2xl mx-auto w-full px-5 pb-10">
-        <AdUnit />
-      </div>
-
       <footer className="border-t border-line bg-white">
         <div className="max-w-2xl mx-auto px-5 py-8 flex flex-col gap-3 text-xs text-ink-3">
           <nav aria-label="頁尾導覽" className="flex flex-wrap gap-x-4 gap-y-2">
@@ -45,7 +37,6 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         </div>
       </footer>
 
-      <AdsenseScript />
     </div>
   )
 }

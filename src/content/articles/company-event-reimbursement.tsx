@@ -63,7 +63,7 @@ export const article: Article = {
         比事後解釋容易得多。
       </p>
 
-      <h2>發票與收據：三個一定會被退件的地方</h2>
+      <h2>發票與收據：三個常見的退件風險</h2>
       <p>
         代墊人最痛的不是墊錢，是報帳被退。台灣的實務上最常見的三種退件原因：
       </p>
@@ -99,7 +99,7 @@ export const article: Article = {
       <p>而且這兩筆的回收難度完全不同：</p>
       <ul>
         <li>
-          <strong>公司補助</strong>雖然慢，但一定會回來，只要單據齊全。
+          <strong>公司補助</strong>通常依內部核銷流程處理；單據齊全也仍要符合公司的補助資格與期限。
         </li>
         <li>
           <strong>同事的自付額</strong>快，但會漏。十二個人裡有兩三個忘記轉，
@@ -134,7 +134,7 @@ export const article: Article = {
       </p>
       <p>
         好處跟大型團體旅行的預收公費一樣——<strong>收錢的時機在花錢之前</strong>，
-        而催款的難度會隨時間指數上升。公費的設計與結餘退款怎麼記帳，
+        而催款通常會隨時間變得更難。公費的設計與結餘退款怎麼記帳，
         寫在<Link href="/articles/large-group-trip">十個人以上的團體旅行</Link>。
       </p>
       <p>

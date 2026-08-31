@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { ARTICLES, findArticle, relatedArticles } from '@/content/articles'
+import { ARTICLE_EVIDENCE, findArticleEvidence } from '@/content/articles/evidence'
 
 const SRC_DIR = join(import.meta.dirname, '../../src')
 
@@ -27,6 +28,27 @@ describe('ARTICLES', () => {
     expect(Number.isNaN(Date.parse(a.published))).toBe(false)
     expect(CATEGORIES).toContain(a.category)
     expect(a.body).toBeTruthy()
+  })
+})
+
+describe('article evidence', () => {
+  it('covers every article and no unknown slug', () => {
+    expect(Object.keys(ARTICLE_EVIDENCE).sort()).toEqual(ARTICLES.map(a => a.slug).sort())
+  })
+
+  it.each(ARTICLES.map(a => [a.slug, a] as const))('%s has substantive review evidence', (_slug, article) => {
+    const evidence = findArticleEvidence(article.slug)
+
+    expect(evidence).toBeDefined()
+    expect(evidence!.methodology.length).toBeGreaterThan(40)
+    expect(evidence!.reviewedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+    expect(Date.parse(evidence!.reviewedAt)).toBeGreaterThanOrEqual(Date.parse(article.published))
+
+    for (const source of evidence!.sources) {
+      expect(source.title).toBeTruthy()
+      expect(source.publisher).toBeTruthy()
+      expect(source.url).toMatch(/^https:\/\//)
+    }
   })
 })
 

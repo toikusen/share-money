@@ -1,6 +1,5 @@
 import { createClient, getAuthUser } from '@/lib/supabase/server'
 import { TripCard } from '@/components/trips/TripCard'
-import { AdUnit } from '@/components/AdUnit'
 import { getPendingReviewCount } from '@/lib/reviews'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -92,8 +91,6 @@ export default async function TripsPage() {
       ) : (
         <div className="flex flex-col gap-2.5">
           {trips?.map(trip => <TripCard key={trip.id} trip={trip} currentUserId={user.id} />)}
-          {/* Below the list only: the empty state is too thin to carry an ad. */}
-          <AdUnit className="mt-6" />
         </div>
       )}
     </main>
